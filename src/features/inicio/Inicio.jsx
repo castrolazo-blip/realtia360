@@ -3,7 +3,6 @@ import { useAppData } from "../../context/AppDataContext.jsx";
 import { Card, EmptyState } from "../../components/ui/index.js";
 import { Icon } from "../../components/icons/Icon.jsx";
 import { CIRCULO_EMOJI, CIRCULO_LABEL } from "../../constants/contactos.js";
-import { agency } from "../../config/agency.js";
 import { ACCIONES_RAPIDAS } from "../../config/nav.js";
 import { ActividadCard } from "../../components/shared/ActividadCard.jsx";
 import { AccionModal } from "../../components/shared/AccionModal.jsx";
@@ -12,8 +11,8 @@ import { generarSugerencias } from "./sugerencias.js";
 
 export function Inicio() {
   const {
-    contactos, oportunidades, actividades, captaciones, contactoNombre,
-    completarActividad, reprogramarActividad, cancelarActividad,
+    contactos, oportunidades, actividades, captaciones, contactoNombre, agency, signOut,
+    completarActividad, reprogramarActividad, cancelarActividad, cargarDatosDemo,
     setVista, manejarAccionRapida, registrarContacto, abrirExpediente,
   } = useAppData();
 
@@ -57,7 +56,9 @@ export function Inicio() {
             <Icon.Bell className="h-[1.125rem] w-[1.125rem] text-gray-600" />
             {alertas.length > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />}
           </button>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-700 text-sm font-bold text-white">{agency.inicialAgente}</div>
+          <button onClick={signOut} title="Cerrar sesión" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-700 text-sm font-bold text-white">
+            {agency.inicialAgente}
+          </button>
         </div>
       </div>
       <div className="bg-white px-4 pb-4 lg:hidden">
@@ -96,6 +97,18 @@ export function Inicio() {
             </button>
           </div>
         </div>
+
+        {contactos.length === 0 && (
+          <div className="mb-6 flex flex-col items-start gap-3 rounded-3xl border border-dashed border-brand-200 bg-brand-50/50 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-display text-base font-semibold text-ink-950">Tu cartera está vacía</p>
+              <p className="mt-0.5 text-sm text-black/50">Crea tu primer contacto, o carga una cartera de ejemplo para explorar Realtia.</p>
+            </div>
+            <button onClick={cargarDatosDemo} className="shrink-0 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800">
+              Cargar datos de ejemplo
+            </button>
+          </div>
+        )}
 
         {/* Sugerencias del Círculo de Influencia */}
         {sugerencias.length > 0 && (

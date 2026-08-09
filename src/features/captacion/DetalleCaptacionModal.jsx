@@ -15,8 +15,8 @@ export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNomb
   const hechos = c.checklist.filter((it) => it.completado).length;
   const total = c.checklist.length;
 
-  function avanzarEstado(nuevoEstado) {
-    const res = onCambiarEstado(c.id, nuevoEstado);
+  async function avanzarEstado(nuevoEstado) {
+    const res = await onCambiarEstado(c.id, nuevoEstado);
     setError(res.ok ? "" : res.error);
   }
 

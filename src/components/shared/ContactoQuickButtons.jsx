@@ -1,10 +1,11 @@
 import { Icon } from "../icons/Icon.jsx";
-import { agency } from "../../config/agency.js";
+import { useAppData } from "../../context/AppDataContext.jsx";
 import { telHref, waHref, mailHref } from "../../lib/contacts.js";
 
 // Usado desde el expediente de contacto y desde los modales de actividad —
 // vive fuera de cualquier feature porque ambos lo necesitan.
 export function ContactoQuickButtons({ contacto, registrar }) {
+  const { agency } = useAppData();
   if (!contacto) return null;
   return (
     <div className="flex gap-2">

@@ -1,4 +1,3 @@
-import { agency } from "../config/agency.js";
 import { CIRCULO_LABEL } from "../constants/contactos.js";
 
 export const soloDigitos = (tel) => (tel || "").replace(/[^\d]/g, "");
@@ -9,7 +8,7 @@ export const mailHref = (correo, asunto) => `mailto:${correo || ""}${asunto ? `?
 // Genera una tarjeta de contacto estándar (vCard 3.0) que cualquier celular reconoce
 // para ofrecer "Agregar a contactos" — es el único mecanismo real desde una web,
 // ya que los navegadores no permiten escribir directo a la libreta de contactos.
-export function contactoToVCard(c) {
+export function contactoToVCard(c, agency) {
   const lineas = [
     "BEGIN:VCARD",
     "VERSION:3.0",
@@ -25,8 +24,8 @@ export function contactoToVCard(c) {
   return lineas.join("\n");
 }
 
-export async function guardarEnContactosDelCelular(contacto) {
-  const vcard = contactoToVCard(contacto);
+export async function guardarEnContactosDelCelular(contacto, agency) {
+  const vcard = contactoToVCard(contacto, agency);
   const nombreArchivo = `${contacto.nombre.replace(/\s+/g, "_")}.vcf`;
   const blob = new Blob([vcard], { type: "text/vcard" });
 

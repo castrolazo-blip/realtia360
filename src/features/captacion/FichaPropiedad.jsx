@@ -1,9 +1,10 @@
 import { Button } from "../../components/ui/index.js";
-import { agency } from "../../config/agency.js";
+import { useAppData } from "../../context/AppDataContext.jsx";
 import { TIPO_INMUEBLE_LABEL, OPERACION_INMUEBLE_LABEL } from "../../constants/captacion.js";
 import { formatMoney } from "../../lib/format.js";
 
 export function FichaPropiedad({ open, onClose, captacion }) {
+  const { agency } = useAppData();
   if (!open) return null;
   const c = captacion;
   const espacios = c.espacios || [];

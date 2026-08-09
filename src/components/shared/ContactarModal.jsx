@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Modal as ModalBase } from "../ui/Modal.jsx";
 import { Icon } from "../icons/Icon.jsx";
-import { agency } from "../../config/agency.js";
+import { useAppData } from "../../context/AppDataContext.jsx";
 import { telHref, waHref, mailHref } from "../../lib/contacts.js";
 
 // Modal de acceso rápido "Llamar a…" / "WhatsApp a…" / "Correo a…", disparado desde las
 // acciones rápidas de Inicio. Vive fuera de ese módulo porque se monta a nivel de la app.
 export function ContactarModal({ tipo, contactos, onClose, onRegistrar }) {
+  const { agency } = useAppData();
   const [q, setQ] = useState("");
   if (!tipo) return null;
 

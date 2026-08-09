@@ -1,5 +1,7 @@
+import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 import { AppDataProvider, useAppData } from "./context/AppDataContext.jsx";
 import { AppShell } from "./layouts/AppShell.jsx";
+import { LoginScreen } from "./features/auth/LoginScreen.jsx";
 import { Inicio } from "./features/inicio/Inicio.jsx";
 import { Contactos } from "./features/contactos/Contactos.jsx";
 import { CrearContactoModal } from "./features/contactos/CrearContactoModal.jsx";
@@ -52,13 +54,45 @@ function GlobalModals() {
   );
 }
 
-export default function App() {
+function PantallaCargando() {
   return (
-    <AppDataProvider>
+    <div className="flex min-h-screen items-center justify-center bg-ink-950">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-gold-400" />
+    </div>
+  );
+}
+
+function AppCargada() {
+  const { cargando } = useAppData();
+  if (cargando) return <PantallaCargando />;
+  return (
+    <>
       <AppShell>
         <VistaActiva />
       </AppShell>
       <GlobalModals />
+    </>
+  );
+}
+
+function AppAutenticada() {
+  return (
+    <AppDataProvider>
+      <AppCargada />
     </AppDataProvider>
+  );
+}
+
+function Gate() {
+  const { cargando, session } = useAuth();
+  if (cargando) return <PantallaCargando />;
+  return session ? <AppAutenticada /> : <LoginScreen />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Gate />
+    </AuthProvider>
   );
 }

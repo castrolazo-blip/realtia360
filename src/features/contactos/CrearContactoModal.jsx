@@ -3,8 +3,10 @@ import { Modal, Field, Button, inputClass } from "../../components/ui/index.js";
 import { CLASIFICACIONES, CLASIFICACION_LABEL, CIRCULOS, CIRCULO_LABEL, CIRCULO_EMOJI, CERCANIA_OPCIONES, POTENCIAL_OPCIONES } from "../../constants/contactos.js";
 import { guardarEnContactosDelCelular } from "../../lib/contacts.js";
 import { Icon } from "../../components/icons/Icon.jsx";
+import { useAppData } from "../../context/AppDataContext.jsx";
 
 export function CrearContactoModal({ open, onClose, onCrear }) {
+  const { agency } = useAppData();
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [ciudad, setCiudad] = useState("");
@@ -29,7 +31,7 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
       potencialReferidos, valorEstrategico, intereses: "",
     };
     onCrear(contacto);
-    if (guardarEnCelular) guardarEnContactosDelCelular(contacto);
+    if (guardarEnCelular) guardarEnContactosDelCelular(contacto, agency);
     setNombre(""); setEmpresa(""); setCiudad(""); setTelefono(""); setCorreo(""); setClasificacion("contacto_relacion");
     setCirculo(""); setCercania("Media"); setProfesion(""); setCumpleanos(""); setPotencialReferidos("Medio"); setValorEstrategico("estandar");
   }

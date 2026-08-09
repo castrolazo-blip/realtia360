@@ -8,7 +8,7 @@ import { guardarEnContactosDelCelular } from "../../lib/contacts.js";
 import { ContactoQuickButtons } from "../../components/shared/ContactoQuickButtons.jsx";
 
 export function DetalleContactoModal() {
-  const { expedienteId: id, contactos, oportunidades, actividades, cerrarExpediente, registrarContacto, agregarNota } = useAppData();
+  const { expedienteId: id, contactos, oportunidades, actividades, cerrarExpediente, registrarContacto, agregarNota, agency } = useAppData();
   const [notaNueva, setNotaNueva] = useState("");
   const c = contactos.find((x) => x.id === id);
 
@@ -38,7 +38,7 @@ export function DetalleContactoModal() {
 
         <button
           type="button"
-          onClick={() => guardarEnContactosDelCelular(c)}
+          onClick={() => guardarEnContactosDelCelular(c, agency)}
           className="flex items-center justify-center gap-2 rounded-xl bg-gray-100 px-3.5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
         >
           📇 Guardar en contactos de mi celular

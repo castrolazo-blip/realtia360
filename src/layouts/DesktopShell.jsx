@@ -1,4 +1,3 @@
-import { agency } from "../config/agency.js";
 import { NAV } from "../config/nav.js";
 import { useAppData } from "../context/AppDataContext.jsx";
 import { PlanBadge } from "../components/ui/PlanBadge.jsx";
@@ -8,7 +7,7 @@ import { Icon } from "../components/icons/Icon.jsx";
 // panel profesional de gestión. Deliberadamente distinto del shell móvil
 // (que usa una barra de pestañas inferior, estilo app nativa).
 export function DesktopShell({ children }) {
-  const { vista, setVista } = useAppData();
+  const { vista, setVista, agency, signOut } = useAppData();
 
   return (
     <div className="min-h-screen bg-gray-50 pl-72">
@@ -53,7 +52,12 @@ export function DesktopShell({ children }) {
               <p className="truncate text-[11px] text-white/40">{agency.nombreOficina}</p>
             </div>
           </div>
-          <PlanBadge plan={agency.plan} className="mt-3" />
+          <div className="mt-3 flex items-center justify-between">
+            <PlanBadge plan={agency.plan} />
+            <button onClick={signOut} className="text-[11px] font-medium text-white/40 hover:text-white/70">
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </aside>
 
