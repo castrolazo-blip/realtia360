@@ -14,6 +14,7 @@ const OPCIONES_VALOR = [{ value: "estandar", label: "Estándar" }, { value: "vip
 export function CrearContactoModal({ open, onClose, onCrear }) {
   const { agency } = useAppData();
   const [nombre, setNombre] = useState("");
+  const [notaEspecial, setNotaEspecial] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [ciudad, setCiudad] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -30,15 +31,17 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
 
   function guardar() {
     if (!nombre) return;
+    const textoNota = notaEspecial.trim();
     const contacto = {
       nombre, empresa: empresa || null, ciudad: ciudad || null, telefono, correo, clasificacion,
       circulo: circulo || null, cercania, profesion: profesion || null,
       cumpleanos: cumpleanos ? cumpleanos.slice(5) : "", ultimoContacto: new Date().toISOString(),
       potencialReferidos, valorEstrategico, intereses: "",
+      notas: textoNota ? [{ id: crypto.randomUUID(), fecha: new Date().toISOString(), texto: textoNota }] : [],
     };
     onCrear(contacto);
     if (guardarEnCelular) guardarEnContactosDelCelular(contacto, agency);
-    setNombre(""); setEmpresa(""); setCiudad(""); setTelefono(""); setCorreo(""); setClasificacion("contacto_relacion");
+    setNombre(""); setNotaEspecial(""); setEmpresa(""); setCiudad(""); setTelefono(""); setCorreo(""); setClasificacion("contacto_relacion");
     setCirculo(""); setCercania("Media"); setProfesion(""); setCumpleanos(""); setPotencialReferidos("Medio"); setValorEstrategico("estandar");
   }
 
@@ -46,6 +49,20 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
     <Modal open={open} onClose={onClose} title="Nuevo contacto">
       <div className="flex flex-col gap-4">
         <Field label="Nombre completo *"><input className={inputClass} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Ana Beatriz Rivas" /></Field>
+
+        <div>
+          <Field label="💬 Nota especial (opcional)">
+            <textarea
+              className={inputClass}
+              rows={2}
+              value={notaEspecial}
+              onChange={(e) => setNotaEspecial(e.target.value)}
+              placeholder="Ej. Nos conocimos en la boda de Ana, quiere comprar casa el próximo año…"
+            />
+          </Field>
+          <p className="mt-1 text-xs text-black/40">Algo que te ayude a recordar por qué guardaste este contacto. Queda en su historial de comentarios.</p>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <Field label="Empresa"><input className={inputClass} value={empresa} onChange={(e) => setEmpresa(e.target.value)} /></Field>
           <Field label="Ciudad"><input className={inputClass} value={ciudad} onChange={(e) => setCiudad(e.target.value)} /></Field>
