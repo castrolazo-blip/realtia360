@@ -6,10 +6,12 @@ import { TIPO_OP_LABEL, ETAPA_LABEL } from "../../constants/oportunidades.js";
 import { diasDesde, haceTiempo, formatCumple } from "../../lib/dates.js";
 import { guardarEnContactosDelCelular } from "../../lib/contacts.js";
 import { ContactoQuickButtons } from "../../components/shared/ContactoQuickButtons.jsx";
+import { CrearContactoModal } from "./CrearContactoModal.jsx";
 
 export function DetalleContactoModal() {
-  const { expedienteId: id, contactos, oportunidades, actividades, cerrarExpediente, registrarContacto, agregarNota, agency } = useAppData();
+  const { expedienteId: id, contactos, oportunidades, actividades, cerrarExpediente, registrarContacto, agregarNota, actualizarContacto, agency } = useAppData();
   const [notaNueva, setNotaNueva] = useState("");
+  const [editando, setEditando] = useState(false);
   const c = contactos.find((x) => x.id === id);
 
   if (!id || !c) return null;
@@ -26,11 +28,16 @@ export function DetalleContactoModal() {
   return (
     <Modal open onClose={cerrarExpediente} title={c.nombre}>
       <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap gap-2">
-          <Badge className={TONE_BY_CLASIFICACION[c.clasificacion]}>{CLASIFICACION_LABEL[c.clasificacion]}</Badge>
-          {c.valorEstrategico === "vip" && <Badge className="bg-gold-100 text-gold-700">⭐ VIP</Badge>}
-          {c.ciudad && <Badge>{c.ciudad}</Badge>}
-          {c.empresa && <Badge>{c.empresa}</Badge>}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Badge className={TONE_BY_CLASIFICACION[c.clasificacion]}>{CLASIFICACION_LABEL[c.clasificacion]}</Badge>
+            {c.valorEstrategico === "vip" && <Badge className="bg-gold-100 text-gold-700">⭐ VIP</Badge>}
+            {c.ciudad && <Badge>{c.ciudad}</Badge>}
+            {c.empresa && <Badge>{c.empresa}</Badge>}
+          </div>
+          <button onClick={() => setEditando(true)} className="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200">
+            ✏️ Editar
+          </button>
         </div>
         {c.telefono && <p className="text-sm text-black/60">📞 {c.telefono}</p>}
         {c.correo && <p className="text-sm text-black/60">✉️ {c.correo}</p>}
@@ -125,6 +132,8 @@ export function DetalleContactoModal() {
           )}
         </div>
       </div>
+
+      <CrearContactoModal open={editando} onClose={() => setEditando(false)} contactoEditar={c} onGuardarEdicion={actualizarContacto} />
     </Modal>
   );
 }

@@ -4,11 +4,13 @@ import { TIPO_INMUEBLE_LABEL, OPERACION_INMUEBLE_LABEL, ESTADOS_CAPTACION, ESTAD
 import { formatMoney } from "../../lib/format.js";
 import { FichaPropiedad } from "./FichaPropiedad.jsx";
 import { AnalisisMercado } from "./AnalisisMercado.jsx";
+import { EditarCaptacionModal } from "./EditarCaptacionModal.jsx";
 
-export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNombre, onClose, onToggleChecklist, onCambiarEstado, onAbrirContacto, onGuardarACM, onGuardarDescripcionIA }) {
+export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNombre, onClose, onToggleChecklist, onCambiarEstado, onAbrirContacto, onGuardarACM, onGuardarDescripcionIA, onGuardarEdicion }) {
   const [error, setError] = useState("");
   const [fichaAbierta, setFichaAbierta] = useState(false);
   const [acmAbierto, setAcmAbierto] = useState(false);
+  const [editando, setEditando] = useState(false);
   const c = captaciones.find((x) => x.id === id);
   if (!id || !c) return null;
 
@@ -23,9 +25,14 @@ export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNomb
   return (
     <Modal open onClose={onClose} title={`${TIPO_INMUEBLE_LABEL[c.tipoInmueble]} · ${OPERACION_INMUEBLE_LABEL[c.operacion]}`}>
       <div className="flex flex-col gap-5">
-        <div>
-          <p className="text-sm font-semibold text-gray-900">{c.direccion}</p>
-          <p className="text-xs text-black/45">{c.zona}</p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">{c.direccion}</p>
+            <p className="text-xs text-black/45">{c.zona}</p>
+          </div>
+          <button onClick={() => setEditando(true)} className="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200">
+            ✏️ Editar
+          </button>
         </div>
 
         <div className="grid grid-cols-2 gap-2.5">
@@ -174,6 +181,7 @@ export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNomb
         contacto={contactos.find((x) => x.id === c.contactoId)} onGuardarDescripcionIA={onGuardarDescripcionIA}
       />
       <AnalisisMercado open={acmAbierto} onClose={() => setAcmAbierto(false)} captacion={c} onGuardar={(datos) => onGuardarACM(c.id, datos)} />
+      <EditarCaptacionModal open={editando} onClose={() => setEditando(false)} captacion={c} onGuardar={(datos) => onGuardarEdicion(c.id, datos)} />
     </Modal>
   );
 }

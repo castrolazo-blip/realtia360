@@ -8,7 +8,7 @@ import { CaptacionGuiada } from "./CaptacionGuiada.jsx";
 import { DetalleCaptacionModal } from "./DetalleCaptacionModal.jsx";
 
 export function Captacion() {
-  const { contactos, captaciones, contactoNombre, crearCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, abrirExpediente, guardarACM, guardarDescripcionIA } = useAppData();
+  const { contactos, captaciones, contactoNombre, crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, abrirExpediente, guardarACM, guardarDescripcionIA } = useAppData();
   const [crearAbierto, setCrearAbierto] = useState(false);
   const [detalleId, setDetalleId] = useState(null);
 
@@ -68,7 +68,7 @@ export function Captacion() {
       <DetalleCaptacionModal
         id={detalleId} captaciones={captaciones} contactos={contactos} contactoNombre={contactoNombre}
         onClose={() => setDetalleId(null)} onToggleChecklist={toggleChecklistCaptacion} onCambiarEstado={cambiarEstadoCaptacion}
-        onAbrirContacto={abrirExpediente} onGuardarACM={guardarACM} onGuardarDescripcionIA={guardarDescripcionIA}
+        onAbrirContacto={abrirExpediente} onGuardarACM={guardarACM} onGuardarDescripcionIA={guardarDescripcionIA} onGuardarEdicion={actualizarCaptacion}
       />
     </div>
   );

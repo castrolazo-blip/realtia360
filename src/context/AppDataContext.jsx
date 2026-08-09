@@ -113,6 +113,16 @@ export function AppDataProvider({ children }) {
     setContactos((prev) => [contactoFromRow(row), ...prev]);
   }
 
+  async function actualizarContacto(id, datos) {
+    const contacto = contactos.find((c) => c.id === id);
+    if (!contacto) return { ok: false, error: "Contacto no encontrado" };
+    const actualizado = { ...contacto, ...datos };
+    const { error } = await supabase.from("realtia_contactos").update(contactoToRow(actualizado)).eq("id", id);
+    if (error) { console.error("actualizarContacto", error); return { ok: false, error: error.message }; }
+    setContactos((prev) => prev.map((c) => (c.id === id ? actualizado : c)));
+    return { ok: true };
+  }
+
   async function crearOportunidad(data) {
     const { data: row, error } = await supabase
       .from("realtia_oportunidades")
@@ -135,6 +145,16 @@ export function AppDataProvider({ children }) {
       .select().single();
     if (error) { console.error("crearCaptacion", error); return; }
     setCaptaciones((prev) => [captacionFromRow(row), ...prev]);
+  }
+
+  async function actualizarCaptacion(id, datos) {
+    const cap = captaciones.find((c) => c.id === id);
+    if (!cap) return { ok: false, error: "Captación no encontrada" };
+    const actualizada = { ...cap, ...datos };
+    const { error } = await supabase.from("realtia_captaciones").update(captacionToRow(actualizada)).eq("id", id);
+    if (error) { console.error("actualizarCaptacion", error); return { ok: false, error: error.message }; }
+    setCaptaciones((prev) => prev.map((c) => (c.id === id ? actualizada : c)));
+    return { ok: true };
   }
 
   async function toggleChecklistCaptacion(captacionId, itemId) {
@@ -257,8 +277,8 @@ export function AppDataProvider({ children }) {
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil,
     contactos, oportunidades, actividades, captaciones,
     contactoNombre, registrarContacto, agregarNota,
-    crearContacto, crearOportunidad, cerrarOportunidad,
-    crearCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, guardarACM, guardarDescripcionIA,
+    crearContacto, actualizarContacto, crearOportunidad, cerrarOportunidad,
+    crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, guardarACM, guardarDescripcionIA,
     crearActividad, completarActividad, reprogramarActividad, cancelarActividad,
     cargarDatosDemo,
     crearContactoAbierto, setCrearContactoAbierto,

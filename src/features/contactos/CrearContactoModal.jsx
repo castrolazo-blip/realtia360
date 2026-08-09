@@ -13,8 +13,10 @@ const OPCIONES_POTENCIAL = POTENCIAL_OPCIONES.map((o) => ({ value: o, label: o }
 const OPCIONES_VALOR = [{ value: "estandar", label: "Estándar" }, { value: "vip", label: "⭐ VIP" }];
 const OPCIONES_MES = MESES_LABEL.map((label, i) => ({ value: String(i + 1).padStart(2, "0"), label }));
 
-export function CrearContactoModal({ open, onClose, onCrear }) {
+export function CrearContactoModal({ open, onClose, onCrear, contactoEditar, onGuardarEdicion }) {
   const { agency } = useAppData();
+  const editando = !!contactoEditar;
+  const [cargado, setCargado] = useState(false);
   const [nombre, setNombre] = useState("");
   const [notaEspecial, setNotaEspecial] = useState("");
   const [empresa, setEmpresa] = useState("");
@@ -32,11 +34,47 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
   const [valorEstrategico, setValorEstrategico] = useState("estandar");
   const [guardarEnCelular, setGuardarEnCelular] = useState(true);
 
+  if (open && !cargado) {
+    if (contactoEditar) {
+      const [mes, dia] = (contactoEditar.cumpleanos || "").split("-");
+      setNombre(contactoEditar.nombre || "");
+      setEmpresa(contactoEditar.empresa || "");
+      setCiudad(contactoEditar.ciudad || "");
+      setTelefono(contactoEditar.telefono || "");
+      setCorreo(contactoEditar.correo || "");
+      setClasificacion(contactoEditar.clasificacion || "contacto_relacion");
+      setCirculo(contactoEditar.circulo || "");
+      setCercania(contactoEditar.cercania || "Media");
+      setProfesion(contactoEditar.profesion || "");
+      setMesCumple(mes || "");
+      setDiaCumple(dia ? String(Number(dia)) : "");
+      setPotencialReferidos(contactoEditar.potencialReferidos || "Medio");
+      setValorEstrategico(contactoEditar.valorEstrategico || "estandar");
+      setMostrarCirculo(!!(contactoEditar.circulo || contactoEditar.profesion || mes));
+      setGuardarEnCelular(false);
+    }
+    setCargado(true);
+  }
+  if (!open && cargado) setCargado(false);
+
   function guardar() {
     if (!nombre) return;
-    const textoNota = notaEspecial.trim();
     const dia = Number(diaCumple);
     const cumpleanos = mesCumple && dia >= 1 && dia <= 31 ? `${mesCumple}-${String(dia).padStart(2, "0")}` : "";
+
+    if (editando) {
+      const datos = {
+        nombre, empresa: empresa || null, ciudad: ciudad || null, telefono, correo, clasificacion,
+        circulo: circulo || null, cercania, profesion: profesion || null,
+        cumpleanos, potencialReferidos, valorEstrategico,
+      };
+      onGuardarEdicion(contactoEditar.id, datos);
+      if (guardarEnCelular) guardarEnContactosDelCelular({ ...contactoEditar, ...datos }, agency);
+      onClose();
+      return;
+    }
+
+    const textoNota = notaEspecial.trim();
     const contacto = {
       nombre, empresa: empresa || null, ciudad: ciudad || null, telefono, correo, clasificacion,
       circulo: circulo || null, cercania, profesion: profesion || null,
@@ -51,22 +89,24 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Nuevo contacto">
+    <Modal open={open} onClose={onClose} title={editando ? "Editar contacto" : "Nuevo contacto"}>
       <div className="flex flex-col gap-4">
         <Field label="Nombre completo *"><input className={inputClass} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Ana Beatriz Rivas" /></Field>
 
-        <div>
-          <Field label="💬 Nota especial (opcional)">
-            <textarea
-              className={inputClass}
-              rows={2}
-              value={notaEspecial}
-              onChange={(e) => setNotaEspecial(e.target.value)}
-              placeholder="Ej. Nos conocimos en la boda de Ana, quiere comprar casa el próximo año…"
-            />
-          </Field>
-          <p className="mt-1 text-xs text-black/40">Algo que te ayude a recordar por qué guardaste este contacto. Queda en su historial de comentarios.</p>
-        </div>
+        {!editando && (
+          <div>
+            <Field label="💬 Nota especial (opcional)">
+              <textarea
+                className={inputClass}
+                rows={2}
+                value={notaEspecial}
+                onChange={(e) => setNotaEspecial(e.target.value)}
+                placeholder="Ej. Nos conocimos en la boda de Ana, quiere comprar casa el próximo año…"
+              />
+            </Field>
+            <p className="mt-1 text-xs text-black/40">Algo que te ayude a recordar por qué guardaste este contacto. Queda en su historial de comentarios.</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Empresa"><input className={inputClass} value={empresa} onChange={(e) => setEmpresa(e.target.value)} /></Field>
@@ -121,7 +161,7 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
           📇 Guardar también en los contactos de mi celular
         </label>
 
-        <Button className="self-end" onClick={guardar} disabled={!nombre}>Guardar contacto</Button>
+        <Button className="self-end" onClick={guardar} disabled={!nombre}>{editando ? "Guardar cambios" : "Guardar contacto"}</Button>
       </div>
     </Modal>
   );
