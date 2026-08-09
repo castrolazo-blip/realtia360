@@ -7,6 +7,7 @@ import { generarDescripcionIA } from "./descripcionIA.js";
 
 export function FichaPropiedad({ open, onClose, captacion, onGuardarDescripcionIA }) {
   const { agency } = useAppData();
+  const [paso, setPaso] = useState("pregunta"); // 'pregunta' | 'ficha' — solo se pregunta la primera vez
   const [descripcion, setDescripcion] = useState("");
   const [cargado, setCargado] = useState(false);
   const [generando, setGenerando] = useState(false);
@@ -15,6 +16,8 @@ export function FichaPropiedad({ open, onClose, captacion, onGuardarDescripcionI
 
   if (open && !cargado) {
     setDescripcion(captacion?.descripcionIA || "");
+    // Si ya se había generado (o decidido) antes, no se vuelve a preguntar.
+    setPaso(captacion?.descripcionIA ? "ficha" : "pregunta");
     setCargado(true);
   }
   if (!open) {
@@ -31,14 +34,20 @@ export function FichaPropiedad({ open, onClose, captacion, onGuardarDescripcionI
     setGenerando(true);
     setErrorIA("");
     try {
-      const texto = await generarDescripcionIA(c);
+      const texto = await generarDescripcionIA(c, agency);
       setDescripcion(texto);
       await onGuardarDescripcionIA?.(c.id, texto);
+      setPaso("ficha");
     } catch (err) {
       setErrorIA(err.message || "No se pudo generar la descripción.");
     } finally {
       setGenerando(false);
     }
+  }
+
+  function continuarSinIA() {
+    setErrorIA("");
+    setPaso("ficha");
   }
 
   function guardarEdicion() {
@@ -53,6 +62,39 @@ export function FichaPropiedad({ open, onClose, captacion, onGuardarDescripcionI
     } catch {
       // el navegador negó el acceso al portapapeles; el texto sigue disponible para copiar a mano
     }
+  }
+
+  if (paso === "pregunta") {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg sm:p-8">
+          <h2 className="font-display text-lg font-bold text-gray-900">✨ ¿Generar descripción con IA?</h2>
+          <p className="mt-2 text-sm text-black/60">
+            La inteligencia artificial puede redactar una descripción de la propiedad lista para publicar en
+            redes sociales, con tu nombre y teléfono al final para que te contacten. Quedará incluida en la
+            ficha y podrás editarla después.
+          </p>
+
+          {errorIA && <p className="mt-3 text-sm text-rose-600">{errorIA}</p>}
+
+          <div className="mt-6 flex flex-col gap-2.5">
+            <Button onClick={generar} disabled={generando} className="!py-3">
+              {generando ? "Generando…" : "Sí, generar con IA"}
+            </Button>
+            <button
+              onClick={continuarSinIA}
+              disabled={generando}
+              className="rounded-2xl py-3 text-sm font-semibold text-black/50 hover:bg-black/5"
+            >
+              Continuar sin IA
+            </button>
+          </div>
+          <button onClick={onClose} className="mt-4 w-full text-center text-xs text-black/35 hover:text-black/50">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -145,15 +187,26 @@ export function FichaPropiedad({ open, onClose, captacion, onGuardarDescripcionI
             </p>
           )}
 
+          {/* Descripción (generada con IA o escrita a mano) — forma parte de la ficha impresa */}
+          {descripcion && (
+            <div className="mt-6 border-t border-black/10 pt-5">
+              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-900">Descripción</h2>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-gray-700">{descripcion}</p>
+            </div>
+          )}
+
           {/* Pie */}
           <div className="mt-8 border-t border-black/10 pt-4">
             <p className="text-sm font-semibold text-gray-900">{agency.nombreAgente}</p>
-            <p className="text-xs text-black/50">Asesor inmobiliario · {agency.nombreOficina}, {agency.ubicacion}</p>
+            <p className="text-xs text-black/50">
+              Asesor inmobiliario · {agency.nombreOficina}, {agency.ubicacion}
+              {agency.telefono ? ` · ${agency.telefono}` : ""}
+            </p>
             <p className="mt-2 text-[11px] text-black/35">Información sujeta a cambios sin previo aviso. Las características pueden variar según verificación final de la propiedad.</p>
           </div>
         </div>
 
-        {/* Descripción para redes — no forma parte de la ficha impresa, es texto para copiar y pegar */}
+        {/* Edición de la descripción — no forma parte de la ficha impresa, solo el panel de control */}
         <div className="no-imprimir mx-auto mt-4 max-w-xl rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-display text-base font-semibold text-indigo-900">✨ Descripción para redes sociales</h2>

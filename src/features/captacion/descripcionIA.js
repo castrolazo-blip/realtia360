@@ -31,9 +31,10 @@ export function construirResumenPropiedad(c) {
   return lineas.join("\n");
 }
 
-export async function generarDescripcionIA(captacion) {
+export async function generarDescripcionIA(captacion, agency) {
   const resumen = construirResumenPropiedad(captacion);
-  const { data, error } = await supabase.functions.invoke("generar-descripcion", { body: { resumen } });
+  const asesor = { nombre: agency?.nombreAgente || "", telefono: agency?.telefono || "" };
+  const { data, error } = await supabase.functions.invoke("generar-descripcion", { body: { resumen, asesor } });
   if (error) {
     // supabase-js no expone el mensaje de error personalizado directo en `error.message`
     // para respuestas no-2xx — hay que leerlo del cuerpo de la respuesta original.

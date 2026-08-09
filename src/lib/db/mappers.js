@@ -153,5 +153,6 @@ export function perfilFromRow(row) {
     nombreOficina: row.nombre_oficina,
     ubicacion: row.ubicacion,
     plan: row.plan,
+    telefono: row.telefono || "",
   };
 }

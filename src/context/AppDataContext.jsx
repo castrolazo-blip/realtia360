@@ -233,12 +233,28 @@ export function AppDataProvider({ children }) {
     nombreAgente: perfil?.nombreAgente || agencyPorDefecto.nombreAgente,
     inicialAgente: (perfil?.nombreAgente || agencyPorDefecto.nombreAgente).charAt(0).toUpperCase(),
     ubicacion: perfil?.ubicacion || agencyPorDefecto.ubicacion,
+    telefono: perfil?.telefono || "",
     plan: perfil?.plan || "basic",
   };
 
+  async function actualizarPerfil(datos) {
+    const { error } = await supabase
+      .from("realtia_perfiles")
+      .update({
+        nombre_agente: datos.nombreAgente,
+        nombre_oficina: datos.nombreOficina,
+        ubicacion: datos.ubicacion,
+        telefono: datos.telefono,
+      })
+      .eq("id", agenteId);
+    if (error) { console.error("actualizarPerfil", error); return { ok: false, error: error.message }; }
+    setPerfil((prev) => ({ ...prev, ...datos }));
+    return { ok: true };
+  }
+
   const value = {
     vista, setVista,
-    cargando, errorCarga, recargarTodo, agency, signOut,
+    cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil,
     contactos, oportunidades, actividades, captaciones,
     contactoNombre, registrarContacto, agregarNota,
     crearContacto, crearOportunidad, cerrarOportunidad,

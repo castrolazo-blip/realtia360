@@ -11,6 +11,7 @@ export function LoginScreen() {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [nombreAgente, setNombreAgente] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [nombreOficina, setNombreOficina] = useState("");
   const [ubicacion, setUbicacion] = useState("");
 
@@ -27,7 +28,7 @@ export function LoginScreen() {
     if (modo === "login") {
       await signIn(correo, contrasena);
     } else {
-      const res = await signUp(correo, contrasena, { nombre_agente: nombreAgente, nombre_oficina: nombreOficina, ubicacion });
+      const res = await signUp(correo, contrasena, { nombre_agente: nombreAgente, telefono, nombre_oficina: nombreOficina, ubicacion });
       if (res.ok) setAvisoConfirmacion(true);
     }
     setEnviando(false);
@@ -70,6 +71,9 @@ export function LoginScreen() {
                 <>
                   <Field label="Tu nombre *">
                     <input required className={inputClass} value={nombreAgente} onChange={(e) => setNombreAgente(e.target.value)} placeholder="Ej. Ana Beatriz Rivas" />
+                  </Field>
+                  <Field label="Teléfono">
+                    <input type="tel" inputMode="tel" className={inputClass} value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="+503 7000-0000" />
                   </Field>
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Oficina / equipo">

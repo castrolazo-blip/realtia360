@@ -6,18 +6,20 @@ import { CIRCULO_EMOJI, CIRCULO_LABEL } from "../../constants/contactos.js";
 import { ACCIONES_RAPIDAS } from "../../config/nav.js";
 import { ActividadCard } from "../../components/shared/ActividadCard.jsx";
 import { AccionModal } from "../../components/shared/AccionModal.jsx";
+import { PerfilModal } from "../../components/shared/PerfilModal.jsx";
 import { Confianza } from "./Confianza.jsx";
 import { generarSugerencias } from "./sugerencias.js";
 
 export function Inicio() {
   const {
-    contactos, oportunidades, actividades, captaciones, contactoNombre, agency, signOut,
+    contactos, oportunidades, actividades, captaciones, contactoNombre, agency,
     completarActividad, reprogramarActividad, cancelarActividad, cargarDatosDemo,
     setVista, manejarAccionRapida, registrarContacto, abrirExpediente,
   } = useAppData();
 
   const [enFoco, setEnFoco] = useState(null);
   const [accion, setAccion] = useState(null);
+  const [perfilAbierto, setPerfilAbierto] = useState(false);
 
   const { vencidas, deHoy, proximas } = useMemo(() => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -56,7 +58,7 @@ export function Inicio() {
             <Icon.Bell className="h-[1.125rem] w-[1.125rem] text-gray-600" />
             {alertas.length > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />}
           </button>
-          <button onClick={signOut} title="Cerrar sesión" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-700 text-sm font-bold text-white">
+          <button onClick={() => setPerfilAbierto(true)} title="Tu perfil" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-700 text-sm font-bold text-white">
             {agency.inicialAgente}
           </button>
         </div>
@@ -236,6 +238,7 @@ export function Inicio() {
         onReprogramar={(f) => { reprogramarActividad(enFoco.id, f); setEnFoco(null); setAccion(null); }}
         onCancelar={() => { cancelarActividad(enFoco.id); setEnFoco(null); setAccion(null); }}
       />
+      <PerfilModal open={perfilAbierto} onClose={() => setPerfilAbierto(false)} />
     </div>
   );
 }

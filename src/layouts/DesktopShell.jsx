@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { NAV } from "../config/nav.js";
 import { useAppData } from "../context/AppDataContext.jsx";
 import { PlanBadge } from "../components/ui/PlanBadge.jsx";
 import { Icon } from "../components/icons/Icon.jsx";
+import { PerfilModal } from "../components/shared/PerfilModal.jsx";
 
 // Shell de escritorio: sidebar fijo oscuro + barra superior de búsqueda, estilo
 // panel profesional de gestión. Deliberadamente distinto del shell móvil
 // (que usa una barra de pestañas inferior, estilo app nativa).
 export function DesktopShell({ children }) {
-  const { vista, setVista, agency, signOut } = useAppData();
+  const { vista, setVista, agency } = useAppData();
+  const [perfilAbierto, setPerfilAbierto] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 pl-72">
@@ -42,7 +45,7 @@ export function DesktopShell({ children }) {
           })}
         </nav>
 
-        <div className="rounded-2xl bg-white/5 p-3.5">
+        <button onClick={() => setPerfilAbierto(true)} className="rounded-2xl bg-white/5 p-3.5 text-left hover:bg-white/10">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-500/90 text-sm font-bold text-ink-950">
               {agency.inicialAgente}
@@ -52,13 +55,10 @@ export function DesktopShell({ children }) {
               <p className="truncate text-[11px] text-white/40">{agency.nombreOficina}</p>
             </div>
           </div>
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-3">
             <PlanBadge plan={agency.plan} />
-            <button onClick={signOut} className="text-[11px] font-medium text-white/40 hover:text-white/70">
-              Cerrar sesión
-            </button>
           </div>
-        </div>
+        </button>
       </aside>
 
       <header className="fixed inset-x-0 left-72 top-0 z-20 flex h-16 items-center justify-between border-b border-black/5 bg-white/85 px-8 backdrop-blur-md">
@@ -74,6 +74,8 @@ export function DesktopShell({ children }) {
       </header>
 
       <main className="px-8 pb-12 pt-24">{children}</main>
+
+      <PerfilModal open={perfilAbierto} onClose={() => setPerfilAbierto(false)} />
     </div>
   );
 }
