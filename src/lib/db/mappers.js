@@ -120,6 +120,7 @@ export function captacionFromRow(row) {
     diagnostico: row.diagnostico || [],
     espacios: row.espacios || [],
     acm: row.acm || null,
+    descripcionIA: row.descripcion_ia || "",
   };
 }
 export function captacionToRow(c) {

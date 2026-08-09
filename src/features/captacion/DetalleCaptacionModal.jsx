@@ -5,7 +5,7 @@ import { formatMoney } from "../../lib/format.js";
 import { FichaPropiedad } from "./FichaPropiedad.jsx";
 import { AnalisisMercado } from "./AnalisisMercado.jsx";
 
-export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNombre, onClose, onToggleChecklist, onCambiarEstado, onAbrirContacto, onGuardarACM }) {
+export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNombre, onClose, onToggleChecklist, onCambiarEstado, onAbrirContacto, onGuardarACM, onGuardarDescripcionIA }) {
   const [error, setError] = useState("");
   const [fichaAbierta, setFichaAbierta] = useState(false);
   const [acmAbierto, setAcmAbierto] = useState(false);
@@ -169,7 +169,10 @@ export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNomb
         )}
       </div>
 
-      <FichaPropiedad open={fichaAbierta} onClose={() => setFichaAbierta(false)} captacion={c} contacto={contactos.find((x) => x.id === c.contactoId)} />
+      <FichaPropiedad
+        open={fichaAbierta} onClose={() => setFichaAbierta(false)} captacion={c}
+        contacto={contactos.find((x) => x.id === c.contactoId)} onGuardarDescripcionIA={onGuardarDescripcionIA}
+      />
       <AnalisisMercado open={acmAbierto} onClose={() => setAcmAbierto(false)} captacion={c} onGuardar={(datos) => onGuardarACM(c.id, datos)} />
     </Modal>
   );

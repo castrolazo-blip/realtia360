@@ -107,6 +107,30 @@ seguridad directamente en la base de datos). Antes de dar por buena la fase 2, p
 en local (`npm run dev`) o ya desplegado: crear una cuenta, cerrar sesión, volver a entrar y
 confirmar que la cartera persiste.
 
+## Descripción de propiedades con IA
+
+En la Ficha de propiedad hay un botón **"Generar con IA"** que redacta una publicación lista
+para copiar en Instagram/Facebook (titular, cuerpo y hashtags) a partir de los datos ya
+capturados de la propiedad. El texto queda guardado en `realtia_captaciones.descripcion_ia`
+y se puede editar a mano (se guarda solo al salir del campo) o volver a generar.
+
+La llamada a la IA **no se hace desde el navegador** — iría expuesta la clave de la API. En su
+lugar, el navegador llama a una función de Supabase (`supabase/functions/generar-descripcion`,
+ya desplegada) que a su vez llama a la API de Claude con una clave guardada como secreto del
+proyecto, nunca visible en el código del cliente.
+
+**Paso pendiente para activarlo:** hay que cargar la clave de la API de Anthropic como secreto
+del proyecto de Supabase (yo no tengo forma de hacerlo por seguridad — un agente no debe tener
+acceso a subir secretos). Con la CLI de Supabase:
+
+```bash
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref ivvjbuhppuwpgefwqpuz
+```
+
+o desde el dashboard: **Project Settings → Edge Functions → Manage secrets**. Mientras no esté
+configurada, el botón "Generar con IA" muestra un mensaje de error indicándolo, sin romper el
+resto de la app.
+
 ## Comercialización por planes
 
 `src/config/plans.js` define Basic / Gold / Premium (con límites de referencia) y

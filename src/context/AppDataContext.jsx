@@ -164,6 +164,12 @@ export function AppDataProvider({ children }) {
     setCaptaciones((prev) => prev.map((c) => (c.id === captacionId ? { ...c, acm: datos } : c)));
   }
 
+  async function guardarDescripcionIA(captacionId, texto) {
+    const { error } = await supabase.from("realtia_captaciones").update({ descripcion_ia: texto }).eq("id", captacionId);
+    if (error) { console.error("guardarDescripcionIA", error); return; }
+    setCaptaciones((prev) => prev.map((c) => (c.id === captacionId ? { ...c, descripcionIA: texto } : c)));
+  }
+
   async function completarActividad(id, resultado, siguiente) {
     const base = actividades.find((a) => a.id === id);
     if (!base) return;
@@ -236,7 +242,7 @@ export function AppDataProvider({ children }) {
     contactos, oportunidades, actividades, captaciones,
     contactoNombre, registrarContacto, agregarNota,
     crearContacto, crearOportunidad, cerrarOportunidad,
-    crearCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, guardarACM,
+    crearCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, guardarACM, guardarDescripcionIA,
     crearActividad, completarActividad, reprogramarActividad, cancelarActividad,
     cargarDatosDemo,
     crearContactoAbierto, setCrearContactoAbierto,

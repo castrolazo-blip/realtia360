@@ -1,15 +1,59 @@
+import { useState } from "react";
 import { Button } from "../../components/ui/index.js";
 import { useAppData } from "../../context/AppDataContext.jsx";
 import { TIPO_INMUEBLE_LABEL, OPERACION_INMUEBLE_LABEL } from "../../constants/captacion.js";
 import { formatMoney } from "../../lib/format.js";
+import { generarDescripcionIA } from "./descripcionIA.js";
 
-export function FichaPropiedad({ open, onClose, captacion }) {
+export function FichaPropiedad({ open, onClose, captacion, onGuardarDescripcionIA }) {
   const { agency } = useAppData();
-  if (!open) return null;
+  const [descripcion, setDescripcion] = useState("");
+  const [cargado, setCargado] = useState(false);
+  const [generando, setGenerando] = useState(false);
+  const [errorIA, setErrorIA] = useState("");
+  const [copiado, setCopiado] = useState(false);
+
+  if (open && !cargado) {
+    setDescripcion(captacion?.descripcionIA || "");
+    setCargado(true);
+  }
+  if (!open) {
+    if (cargado) setCargado(false);
+    return null;
+  }
+
   const c = captacion;
   const espacios = c.espacios || [];
   const espacioAmenidades = espacios.find((e) => e.id === "amenidades");
   const espaciosDeLaCasa = espacios.filter((e) => e.id !== "amenidades");
+
+  async function generar() {
+    setGenerando(true);
+    setErrorIA("");
+    try {
+      const texto = await generarDescripcionIA(c);
+      setDescripcion(texto);
+      await onGuardarDescripcionIA?.(c.id, texto);
+    } catch (err) {
+      setErrorIA(err.message || "No se pudo generar la descripción.");
+    } finally {
+      setGenerando(false);
+    }
+  }
+
+  function guardarEdicion() {
+    if (descripcion !== (c.descripcionIA || "")) onGuardarDescripcionIA?.(c.id, descripcion);
+  }
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(descripcion);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // el navegador negó el acceso al portapapeles; el texto sigue disponible para copiar a mano
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-black/40">
@@ -107,6 +151,41 @@ export function FichaPropiedad({ open, onClose, captacion }) {
             <p className="text-xs text-black/50">Asesor inmobiliario · {agency.nombreOficina}, {agency.ubicacion}</p>
             <p className="mt-2 text-[11px] text-black/35">Información sujeta a cambios sin previo aviso. Las características pueden variar según verificación final de la propiedad.</p>
           </div>
+        </div>
+
+        {/* Descripción para redes — no forma parte de la ficha impresa, es texto para copiar y pegar */}
+        <div className="no-imprimir mx-auto mt-4 max-w-xl rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="font-display text-base font-semibold text-indigo-900">✨ Descripción para redes sociales</h2>
+            <Button variant="secondary" onClick={generar} disabled={generando} className="!px-3 !py-1.5 text-xs">
+              {generando ? "Generando…" : descripcion ? "Regenerar" : "Generar con IA"}
+            </Button>
+          </div>
+
+          {errorIA && <p className="mb-3 text-xs text-rose-600">{errorIA}</p>}
+
+          {descripcion ? (
+            <>
+              <textarea
+                className="w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-700/15"
+                rows={8}
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                onBlur={guardarEdicion}
+              />
+              <div className="mt-2 flex justify-end">
+                <Button variant="secondary" onClick={copiar} className="!px-3 !py-1.5 text-xs">
+                  {copiado ? "¡Copiado!" : "Copiar"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            !generando && (
+              <p className="text-sm text-indigo-900/60">
+                Genera una publicación lista para copiar en Instagram o Facebook, a partir de los datos de esta ficha.
+              </p>
+            )
+          )}
         </div>
       </div>
     </div>
