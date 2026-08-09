@@ -62,9 +62,21 @@ function PantallaCargando() {
   );
 }
 
+function PantallaError({ mensaje, onReintentar }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ink-950 px-6 text-center">
+      <p className="max-w-sm text-sm text-white/70">{mensaje}</p>
+      <button onClick={onReintentar} className="rounded-full bg-gold-500 px-5 py-2.5 text-sm font-semibold text-ink-950">
+        Reintentar
+      </button>
+    </div>
+  );
+}
+
 function AppCargada() {
-  const { cargando } = useAppData();
+  const { cargando, errorCarga, recargarTodo } = useAppData();
   if (cargando) return <PantallaCargando />;
+  if (errorCarga) return <PantallaError mensaje={errorCarga} onReintentar={recargarTodo} />;
   return (
     <>
       <AppShell>

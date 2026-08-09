@@ -7,3 +7,6 @@ export { EmptyState } from "./EmptyState.jsx";
 export { SectionHeader } from "./SectionHeader.jsx";
 export { Chip } from "./Chip.jsx";
 export { PlanBadge } from "./PlanBadge.jsx";
+export { TarjetaSeleccion } from "./TarjetaSeleccion.jsx";
+export { OpcionesBotones } from "./OpcionesBotones.jsx";
+export { SelectorContacto } from "./SelectorContacto.jsx";

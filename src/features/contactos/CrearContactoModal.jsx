@@ -1,9 +1,15 @@
 import { useState } from "react";
-import { Modal, Field, Button, inputClass } from "../../components/ui/index.js";
+import { Modal, Field, Button, inputClass, OpcionesBotones } from "../../components/ui/index.js";
 import { CLASIFICACIONES, CLASIFICACION_LABEL, CIRCULOS, CIRCULO_LABEL, CIRCULO_EMOJI, CERCANIA_OPCIONES, POTENCIAL_OPCIONES } from "../../constants/contactos.js";
 import { guardarEnContactosDelCelular } from "../../lib/contacts.js";
 import { Icon } from "../../components/icons/Icon.jsx";
 import { useAppData } from "../../context/AppDataContext.jsx";
+
+const OPCIONES_CLASIFICACION = CLASIFICACIONES.map((c) => ({ value: c, label: CLASIFICACION_LABEL[c] }));
+const OPCIONES_CIRCULO = [{ value: "", label: "Sin categoría" }, ...CIRCULOS.map((c) => ({ value: c, label: CIRCULO_LABEL[c], emoji: CIRCULO_EMOJI[c] }))];
+const OPCIONES_CERCANIA = CERCANIA_OPCIONES.map((o) => ({ value: o, label: o }));
+const OPCIONES_POTENCIAL = POTENCIAL_OPCIONES.map((o) => ({ value: o, label: o }));
+const OPCIONES_VALOR = [{ value: "estandar", label: "Estándar" }, { value: "vip", label: "⭐ VIP" }];
 
 export function CrearContactoModal({ open, onClose, onCrear }) {
   const { agency } = useAppData();
@@ -45,13 +51,11 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
           <Field label="Ciudad"><input className={inputClass} value={ciudad} onChange={(e) => setCiudad(e.target.value)} /></Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Teléfono"><input className={inputClass} value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="+503 7000-0000" /></Field>
-          <Field label="Correo"><input className={inputClass} value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="correo@ejemplo.com" /></Field>
+          <Field label="Teléfono"><input type="tel" inputMode="tel" className={inputClass} value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="+503 7000-0000" /></Field>
+          <Field label="Correo"><input type="email" inputMode="email" className={inputClass} value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="correo@ejemplo.com" /></Field>
         </div>
         <Field label="Clasificación">
-          <select className={inputClass} value={clasificacion} onChange={(e) => setClasificacion(e.target.value)}>
-            {CLASIFICACIONES.map((c) => <option key={c} value={c}>{CLASIFICACION_LABEL[c]}</option>)}
-          </select>
+          <OpcionesBotones columnas={2} opciones={OPCIONES_CLASIFICACION} valor={clasificacion} onChange={setClasificacion} />
         </Field>
 
         <button type="button" onClick={() => setMostrarCirculo((v) => !v)} className="flex items-center justify-between rounded-xl bg-indigo-50 px-3.5 py-2.5 text-left text-sm font-medium text-indigo-700">
@@ -60,35 +64,21 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
         </button>
 
         {mostrarCirculo && (
-          <div className="flex flex-col gap-3 rounded-xl bg-gray-100 p-3">
+          <div className="flex flex-col gap-4 rounded-xl bg-gray-100 p-3">
             <Field label="Categoría">
-              <select className={inputClass} value={circulo} onChange={(e) => setCirculo(e.target.value)}>
-                <option value="">Sin categoría</option>
-                {CIRCULOS.map((c) => <option key={c} value={c}>{CIRCULO_EMOJI[c]} {CIRCULO_LABEL[c]}</option>)}
-              </select>
+              <OpcionesBotones columnas={2} opciones={OPCIONES_CIRCULO} valor={circulo} onChange={setCirculo} />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Cercanía">
-                <select className={inputClass} value={cercania} onChange={(e) => setCercania(e.target.value)}>
-                  {CERCANIA_OPCIONES.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </Field>
-              <Field label="Profesión"><input className={inputClass} value={profesion} onChange={(e) => setProfesion(e.target.value)} /></Field>
-            </div>
+            <Field label="Cercanía">
+              <OpcionesBotones columnas={3} opciones={OPCIONES_CERCANIA} valor={cercania} onChange={setCercania} />
+            </Field>
+            <Field label="Profesión"><input className={inputClass} value={profesion} onChange={(e) => setProfesion(e.target.value)} /></Field>
             <Field label="Cumpleaños"><input type="date" className={inputClass} value={cumpleanos} onChange={(e) => setCumpleanos(e.target.value)} /></Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Potencial de referidos">
-                <select className={inputClass} value={potencialReferidos} onChange={(e) => setPotencialReferidos(e.target.value)}>
-                  {POTENCIAL_OPCIONES.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </Field>
-              <Field label="Valor estratégico">
-                <select className={inputClass} value={valorEstrategico} onChange={(e) => setValorEstrategico(e.target.value)}>
-                  <option value="estandar">Estándar</option>
-                  <option value="vip">VIP</option>
-                </select>
-              </Field>
-            </div>
+            <Field label="Potencial de referidos">
+              <OpcionesBotones columnas={3} opciones={OPCIONES_POTENCIAL} valor={potencialReferidos} onChange={setPotencialReferidos} />
+            </Field>
+            <Field label="Valor estratégico">
+              <OpcionesBotones columnas={2} opciones={OPCIONES_VALOR} valor={valorEstrategico} onChange={setValorEstrategico} />
+            </Field>
           </div>
         )}
 

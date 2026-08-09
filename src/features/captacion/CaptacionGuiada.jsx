@@ -6,7 +6,7 @@ import { ESPACIOS_CATALOGO } from "../../constants/espacios.js";
 import { DEC_PILARES } from "../../constants/decPilares.js";
 import { formatMoney } from "../../lib/format.js";
 import { BotonGrande } from "./wizard/BotonGrande.jsx";
-import { TarjetaSeleccion } from "./wizard/TarjetaSeleccion.jsx";
+import { TarjetaSeleccion } from "../../components/ui/TarjetaSeleccion.jsx";
 import { ContadorGrande } from "./wizard/ContadorGrande.jsx";
 
 // Total de pasos: 1 bienvenida/propietario + 4 pilares DEC + 1 datos de propiedad

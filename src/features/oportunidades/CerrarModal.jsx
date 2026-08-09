@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Modal, Field, Button, inputClass } from "../../components/ui/index.js";
+import { Modal, Field, Button, inputClass, OpcionesBotones } from "../../components/ui/index.js";
+
+const OPCIONES_ESTADO = [
+  { value: "ganada", label: "Ganada" },
+  { value: "perdida", label: "Perdida" },
+  { value: "pausada", label: "Pausada" },
+];
 
 export function CerrarModal({ id, onClose, onCerrar }) {
   const [estado, setEstado] = useState("ganada");
@@ -9,11 +15,7 @@ export function CerrarModal({ id, onClose, onCerrar }) {
     <Modal open onClose={onClose} title="Cerrar oportunidad">
       <div className="flex flex-col gap-4">
         <Field label="Resultado">
-          <select className={inputClass} value={estado} onChange={(e) => setEstado(e.target.value)}>
-            <option value="ganada">Ganada</option>
-            <option value="perdida">Perdida</option>
-            <option value="pausada">Pausada</option>
-          </select>
+          <OpcionesBotones columnas={3} opciones={OPCIONES_ESTADO} valor={estado} onChange={setEstado} />
         </Field>
         <Field label="Motivo (obligatorio)"><textarea className={inputClass} rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} /></Field>
         <Button className="self-end" disabled={!motivo} onClick={() => onCerrar(estado, motivo)}>Confirmar cierre</Button>

@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Modal, Field, Button, inputClass } from "../../components/ui/index.js";
+import { Modal, Field, Button, inputClass, OpcionesBotones, SelectorContacto } from "../../components/ui/index.js";
 import { TIPO_OP_LABEL } from "../../constants/oportunidades.js";
+
+const OPCIONES_TIPO = Object.keys(TIPO_OP_LABEL).map((t) => ({ value: t, label: TIPO_OP_LABEL[t] }));
 
 export function CrearOportunidadModal({ open, onClose, onCrear, contactos }) {
   const [contactoId, setContactoId] = useState(contactos[0]?.id || "");
@@ -20,17 +22,13 @@ export function CrearOportunidadModal({ open, onClose, onCrear, contactos }) {
     <Modal open={open} onClose={onClose} title="Nueva oportunidad">
       <div className="flex flex-col gap-4">
         <Field label="Contacto *">
-          <select className={inputClass} value={contactoId} onChange={(e) => setContactoId(e.target.value)}>
-            {contactos.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
+          <SelectorContacto contactos={contactos} valor={contactoId} onChange={setContactoId} />
         </Field>
         <Field label="Tipo">
-          <select className={inputClass} value={tipo} onChange={(e) => setTipo(e.target.value)}>
-            {Object.keys(TIPO_OP_LABEL).map((t) => <option key={t} value={t}>{TIPO_OP_LABEL[t]}</option>)}
-          </select>
+          <OpcionesBotones columnas={2} opciones={OPCIONES_TIPO} valor={tipo} onChange={setTipo} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Valor estimado (USD)"><input type="number" className={inputClass} value={valor} onChange={(e) => setValor(e.target.value)} /></Field>
+          <Field label="Valor estimado (USD)"><input type="number" inputMode="decimal" className={inputClass} value={valor} onChange={(e) => setValor(e.target.value)} /></Field>
           <Field label="Zona"><input className={inputClass} value={zona} onChange={(e) => setZona(e.target.value)} /></Field>
         </div>
         <div className="rounded-xl bg-gray-100 p-3">

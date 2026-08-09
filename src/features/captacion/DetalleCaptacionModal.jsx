@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal, Field, Badge, inputClass } from "../../components/ui/index.js";
+import { Modal, Field, Badge, OpcionesBotones } from "../../components/ui/index.js";
 import { TIPO_INMUEBLE_LABEL, OPERACION_INMUEBLE_LABEL, ESTADOS_CAPTACION, ESTADO_CAPTACION_LABEL } from "../../constants/captacion.js";
 import { formatMoney } from "../../lib/format.js";
 import { FichaPropiedad } from "./FichaPropiedad.jsx";
@@ -65,9 +65,12 @@ export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNomb
         </div>
 
         <Field label="Estado">
-          <select className={inputClass} value={c.estado} onChange={(e) => avanzarEstado(e.target.value)}>
-            {ESTADOS_CAPTACION.map((e) => <option key={e} value={e}>{ESTADO_CAPTACION_LABEL[e]}</option>)}
-          </select>
+          <OpcionesBotones
+            columnas={2}
+            opciones={ESTADOS_CAPTACION.map((e) => ({ value: e, label: ESTADO_CAPTACION_LABEL[e] }))}
+            valor={c.estado}
+            onChange={avanzarEstado}
+          />
         </Field>
         {error && <p className="text-sm text-orange-700">⚠️ {error}</p>}
 

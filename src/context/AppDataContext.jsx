@@ -29,6 +29,7 @@ export function AppDataProvider({ children }) {
   const [captaciones, setCaptaciones] = useState([]);
   const [perfil, setPerfil] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [errorCarga, setErrorCarga] = useState("");
 
   const [crearContactoAbierto, setCrearContactoAbierto] = useState(false);
   const [crearOportunidadAbierto, setCrearOportunidadAbierto] = useState(false);
@@ -40,34 +41,41 @@ export function AppDataProvider({ children }) {
   const recargarTodo = useCallback(async () => {
     if (!agenteId) return;
     setCargando(true);
-    let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes] = await Promise.all([
-      supabase.from("realtia_perfiles").select("*").eq("id", agenteId).maybeSingle(),
-      supabase.from("realtia_contactos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
-      supabase.from("realtia_oportunidades").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
-      supabase.from("realtia_actividades").select("*").eq("agente_id", agenteId).order("fecha_hora", { ascending: false }),
-      supabase.from("realtia_captaciones").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
-    ]);
-    // Red de seguridad: si por alguna razón el trigger de la base de datos no creó el
-    // perfil al registrarse, lo creamos aquí mismo con lo que haya en los metadatos de auth.
-    if (!perfilRes.data) {
-      const meta = usuario?.user_metadata || {};
-      const { data: nuevoPerfil } = await supabase
-        .from("realtia_perfiles")
-        .insert({
-          id: agenteId,
-          nombre_agente: meta.nombre_agente || usuario?.email?.split("@")[0] || "Agente",
-          nombre_oficina: meta.nombre_oficina || "Mi oficina",
-          ubicacion: meta.ubicacion || "",
-        })
-        .select().single();
-      if (nuevoPerfil) perfilRes = { data: nuevoPerfil };
+    setErrorCarga("");
+    try {
+      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes] = await Promise.all([
+        supabase.from("realtia_perfiles").select("*").eq("id", agenteId).maybeSingle(),
+        supabase.from("realtia_contactos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
+        supabase.from("realtia_oportunidades").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
+        supabase.from("realtia_actividades").select("*").eq("agente_id", agenteId).order("fecha_hora", { ascending: false }),
+        supabase.from("realtia_captaciones").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
+      ]);
+      // Red de seguridad: si por alguna razón el trigger de la base de datos no creó el
+      // perfil al registrarse, lo creamos aquí mismo con lo que haya en los metadatos de auth.
+      if (!perfilRes.data) {
+        const meta = usuario?.user_metadata || {};
+        const { data: nuevoPerfil } = await supabase
+          .from("realtia_perfiles")
+          .insert({
+            id: agenteId,
+            nombre_agente: meta.nombre_agente || usuario?.email?.split("@")[0] || "Agente",
+            nombre_oficina: meta.nombre_oficina || "Mi oficina",
+            ubicacion: meta.ubicacion || "",
+          })
+          .select().single();
+        if (nuevoPerfil) perfilRes = { data: nuevoPerfil };
+      }
+      setPerfil(perfilRes.data ? perfilFromRow(perfilRes.data) : null);
+      setContactos((contactosRes.data || []).map(contactoFromRow));
+      setOportunidades((oportunidadesRes.data || []).map(oportunidadFromRow));
+      setActividades((actividadesRes.data || []).map(actividadFromRow));
+      setCaptaciones((captacionesRes.data || []).map(captacionFromRow));
+    } catch (err) {
+      console.error("recargarTodo", err);
+      setErrorCarga("No se pudo cargar tu cartera. Revisa tu conexión e intenta de nuevo.");
+    } finally {
+      setCargando(false);
     }
-    setPerfil(perfilRes.data ? perfilFromRow(perfilRes.data) : null);
-    setContactos((contactosRes.data || []).map(contactoFromRow));
-    setOportunidades((oportunidadesRes.data || []).map(oportunidadFromRow));
-    setActividades((actividadesRes.data || []).map(actividadFromRow));
-    setCaptaciones((captacionesRes.data || []).map(captacionFromRow));
-    setCargando(false);
   }, [agenteId]);
 
   useEffect(() => {
@@ -224,7 +232,7 @@ export function AppDataProvider({ children }) {
 
   const value = {
     vista, setVista,
-    cargando, agency, signOut,
+    cargando, errorCarga, recargarTodo, agency, signOut,
     contactos, oportunidades, actividades, captaciones,
     contactoNombre, registrarContacto, agregarNota,
     crearContacto, crearOportunidad, cerrarOportunidad,
