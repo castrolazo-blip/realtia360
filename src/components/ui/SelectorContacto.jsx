@@ -34,7 +34,7 @@ export function SelectorContacto({ contactos, valor, onChange, permitirNinguno =
         <input
           autoFocus
           placeholder="Buscar contacto por nombre…"
-          className="flex-1 bg-transparent text-sm outline-none"
+          className="flex-1 bg-transparent text-base outline-none"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />

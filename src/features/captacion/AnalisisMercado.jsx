@@ -113,23 +113,23 @@ export function AnalisisMercado({ open, onClose, captacion, onGuardar }) {
           {[...calculados, ...comparables.filter((cp) => !(Number(cp.precio) > 0))].map((cp) => (
             <Card key={cp.id} className="p-4">
               <div className="mb-2 flex items-center gap-2">
-                <input className="flex-1 rounded-xl border border-black/10 bg-gray-50 px-3 py-2.5 text-sm font-semibold outline-none focus:border-indigo-600"
+                <input className="flex-1 rounded-xl border border-black/10 bg-gray-50 px-3 py-2.5 text-base font-semibold outline-none focus:border-indigo-600"
                   placeholder="Dirección del comparable" value={cp.direccion} onChange={(e) => actualizar(cp.id, "direccion", e.target.value)} />
                 <button onClick={() => eliminar(cp.id)} className="shrink-0 rounded-full p-2 text-black/30 hover:bg-black/5">✕</button>
               </div>
               <Field label={cp.similitud != null ? "Precio" : "Precio *"}>
-                <input type="number" className="mb-2 w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-sm outline-none focus:border-indigo-600" value={cp.precio} onChange={(e) => actualizar(cp.id, "precio", e.target.value)} />
+                <input type="number" className="mb-2 w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-base outline-none focus:border-indigo-600" value={cp.precio} onChange={(e) => actualizar(cp.id, "precio", e.target.value)} />
               </Field>
               <div className="mb-2 grid grid-cols-2 gap-2">
-                <Field label="V² terreno"><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-sm outline-none focus:border-indigo-600" value={cp.areaTerreno} onChange={(e) => actualizar(cp.id, "areaTerreno", e.target.value)} /></Field>
-                <Field label="m² constr."><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-sm outline-none focus:border-indigo-600" value={cp.areaConstruccion} onChange={(e) => actualizar(cp.id, "areaConstruccion", e.target.value)} /></Field>
+                <Field label="V² terreno"><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-base outline-none focus:border-indigo-600" value={cp.areaTerreno} onChange={(e) => actualizar(cp.id, "areaTerreno", e.target.value)} /></Field>
+                <Field label="m² constr."><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-base outline-none focus:border-indigo-600" value={cp.areaConstruccion} onChange={(e) => actualizar(cp.id, "areaConstruccion", e.target.value)} /></Field>
               </div>
               <div className="mb-2 grid grid-cols-2 gap-2">
-                <Field label="Habitaciones"><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-sm outline-none focus:border-indigo-600" value={cp.habitaciones} onChange={(e) => actualizar(cp.id, "habitaciones", e.target.value)} /></Field>
-                <Field label="Baños"><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-sm outline-none focus:border-indigo-600" value={cp.banos} onChange={(e) => actualizar(cp.id, "banos", e.target.value)} /></Field>
+                <Field label="Habitaciones"><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-base outline-none focus:border-indigo-600" value={cp.habitaciones} onChange={(e) => actualizar(cp.id, "habitaciones", e.target.value)} /></Field>
+                <Field label="Baños"><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-base outline-none focus:border-indigo-600" value={cp.banos} onChange={(e) => actualizar(cp.id, "banos", e.target.value)} /></Field>
               </div>
               <div className="mb-3 w-1/2 pr-1">
-                <Field label="Parqueos"><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-sm outline-none focus:border-indigo-600" value={cp.parqueos} onChange={(e) => actualizar(cp.id, "parqueos", e.target.value)} /></Field>
+                <Field label="Parqueos"><input type="number" className="w-full rounded-xl border border-black/10 bg-gray-50 px-2.5 py-2 text-base outline-none focus:border-indigo-600" value={cp.parqueos} onChange={(e) => actualizar(cp.id, "parqueos", e.target.value)} /></Field>
               </div>
 
               {cp.similitud != null ? (

@@ -220,7 +220,7 @@ export function FichaPropiedad({ open, onClose, captacion, onGuardarDescripcionI
           {descripcion ? (
             <>
               <textarea
-                className="w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-700/15"
+                className="w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-base text-gray-900 outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-700/15"
                 rows={8}
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}

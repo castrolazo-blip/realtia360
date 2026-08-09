@@ -42,7 +42,7 @@ export function ContactarModal({ tipo, contactos, onClose, onRegistrar }) {
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2 rounded-xl border border-black/10 bg-gray-50 px-3 py-2.5">
           <Icon.Search className="h-4 w-4 text-black/35" />
-          <input autoFocus placeholder="Buscar contacto…" className="flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input autoFocus placeholder="Buscar contacto…" className="flex-1 bg-transparent text-base outline-none" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="flex max-h-80 flex-col gap-1.5 overflow-y-auto">
           {filtrados.map((c) => (

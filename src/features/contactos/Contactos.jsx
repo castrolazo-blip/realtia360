@@ -35,7 +35,7 @@ export function Contactos() {
 
       <div className="mb-4 flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-3.5 py-2.5">
         <Icon.Search className="h-4 w-4 text-black/35" />
-        <input placeholder="Buscar por nombre o empresa…" className="flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input placeholder="Buscar por nombre o empresa…" className="flex-1 bg-transparent text-base outline-none" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       <div className="mb-4 flex gap-1.5">
