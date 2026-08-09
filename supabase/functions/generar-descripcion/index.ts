@@ -72,7 +72,16 @@ Deno.serve(async (req) => {
     }
 
     const data = await resp.json();
-    const texto = data?.content?.[0]?.text?.trim() || "";
+    // No asumimos que el primer bloque es el de texto: algunos modelos devuelven antes un
+    // bloque de tipo "thinking" (razonamiento interno) que no trae el texto final.
+    const bloqueTexto = (data?.content || []).find((b) => b.type === "text");
+    const texto = bloqueTexto?.text?.trim() || "";
+    if (!texto) {
+      return new Response(JSON.stringify({ error: "La IA no devolvió texto. Intenta de nuevo." }), {
+        status: 502,
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ descripcion: texto }), {
       headers: { ...CORS, "Content-Type": "application/json" },
     });
