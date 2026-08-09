@@ -1,3 +1,5 @@
+import { MESES_LABEL } from "../constants/calendario.js";
+
 export const conHora = (offsetDias, h = 12, m = 0) => {
   const d = new Date();
   d.setDate(d.getDate() + offsetDias);
@@ -32,6 +34,15 @@ export const diasHastaProximoCumple = (mesDia) => {
 };
 
 export const formatHora = (iso) => new Date(iso).toLocaleTimeString("es-SV", { hour: "numeric", minute: "2-digit" });
+
+// Muestra un cumpleaños guardado como "MM-DD" (sin año, a propósito: no se le pregunta
+// el año de nacimiento a nadie) en formato legible, ej. "15 de agosto".
+export const formatCumple = (mesDia) => {
+  if (!mesDia) return "";
+  const [mes, dia] = mesDia.split("-").map(Number);
+  if (!mes || !dia) return mesDia;
+  return `${dia} de ${MESES_LABEL[mes - 1]?.toLowerCase() || ""}`.trim();
+};
 
 export const mismoDia = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 

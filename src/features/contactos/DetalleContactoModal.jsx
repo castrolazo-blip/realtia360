@@ -3,7 +3,7 @@ import { useAppData } from "../../context/AppDataContext.jsx";
 import { Modal, Badge, Button, inputClass } from "../../components/ui/index.js";
 import { TONE_BY_CLASIFICACION, CLASIFICACION_LABEL, CIRCULO_LABEL, CIRCULO_EMOJI } from "../../constants/contactos.js";
 import { TIPO_OP_LABEL, ETAPA_LABEL } from "../../constants/oportunidades.js";
-import { diasDesde, haceTiempo } from "../../lib/dates.js";
+import { diasDesde, haceTiempo, formatCumple } from "../../lib/dates.js";
 import { guardarEnContactosDelCelular } from "../../lib/contacts.js";
 import { ContactoQuickButtons } from "../../components/shared/ContactoQuickButtons.jsx";
 
@@ -59,7 +59,7 @@ export function DetalleContactoModal() {
             <div className="grid grid-cols-2 gap-2 text-xs text-indigo-900/70">
               <p>Último contacto: {diasDesde(c.ultimoContacto) != null ? haceTiempo(c.ultimoContacto) : "—"}</p>
               <p>Potencial de referidos: {c.potencialReferidos || "—"}</p>
-              {c.cumpleanos && <p>Cumpleaños: {c.cumpleanos}</p>}
+              {c.cumpleanos && <p>Cumpleaños: {formatCumple(c.cumpleanos)}</p>}
               {c.intereses && <p>Intereses: {c.intereses}</p>}
             </div>
           </div>

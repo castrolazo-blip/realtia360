@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, Field, Button, inputClass, OpcionesBotones } from "../../components/ui/index.js";
 import { CLASIFICACIONES, CLASIFICACION_LABEL, CIRCULOS, CIRCULO_LABEL, CIRCULO_EMOJI, CERCANIA_OPCIONES, POTENCIAL_OPCIONES } from "../../constants/contactos.js";
+import { MESES_LABEL } from "../../constants/calendario.js";
 import { guardarEnContactosDelCelular } from "../../lib/contacts.js";
 import { Icon } from "../../components/icons/Icon.jsx";
 import { useAppData } from "../../context/AppDataContext.jsx";
@@ -10,6 +11,7 @@ const OPCIONES_CIRCULO = [{ value: "", label: "Sin categoría" }, ...CIRCULOS.ma
 const OPCIONES_CERCANIA = CERCANIA_OPCIONES.map((o) => ({ value: o, label: o }));
 const OPCIONES_POTENCIAL = POTENCIAL_OPCIONES.map((o) => ({ value: o, label: o }));
 const OPCIONES_VALOR = [{ value: "estandar", label: "Estándar" }, { value: "vip", label: "⭐ VIP" }];
+const OPCIONES_MES = MESES_LABEL.map((label, i) => ({ value: String(i + 1).padStart(2, "0"), label }));
 
 export function CrearContactoModal({ open, onClose, onCrear }) {
   const { agency } = useAppData();
@@ -24,7 +26,8 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
   const [circulo, setCirculo] = useState("");
   const [cercania, setCercania] = useState("Media");
   const [profesion, setProfesion] = useState("");
-  const [cumpleanos, setCumpleanos] = useState("");
+  const [mesCumple, setMesCumple] = useState("");
+  const [diaCumple, setDiaCumple] = useState("");
   const [potencialReferidos, setPotencialReferidos] = useState("Medio");
   const [valorEstrategico, setValorEstrategico] = useState("estandar");
   const [guardarEnCelular, setGuardarEnCelular] = useState(true);
@@ -32,17 +35,19 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
   function guardar() {
     if (!nombre) return;
     const textoNota = notaEspecial.trim();
+    const dia = Number(diaCumple);
+    const cumpleanos = mesCumple && dia >= 1 && dia <= 31 ? `${mesCumple}-${String(dia).padStart(2, "0")}` : "";
     const contacto = {
       nombre, empresa: empresa || null, ciudad: ciudad || null, telefono, correo, clasificacion,
       circulo: circulo || null, cercania, profesion: profesion || null,
-      cumpleanos: cumpleanos ? cumpleanos.slice(5) : "", ultimoContacto: new Date().toISOString(),
+      cumpleanos, ultimoContacto: new Date().toISOString(),
       potencialReferidos, valorEstrategico, intereses: "",
       notas: textoNota ? [{ id: crypto.randomUUID(), fecha: new Date().toISOString(), texto: textoNota }] : [],
     };
     onCrear(contacto);
     if (guardarEnCelular) guardarEnContactosDelCelular(contacto, agency);
     setNombre(""); setNotaEspecial(""); setEmpresa(""); setCiudad(""); setTelefono(""); setCorreo(""); setClasificacion("contacto_relacion");
-    setCirculo(""); setCercania("Media"); setProfesion(""); setCumpleanos(""); setPotencialReferidos("Medio"); setValorEstrategico("estandar");
+    setCirculo(""); setCercania("Media"); setProfesion(""); setMesCumple(""); setDiaCumple(""); setPotencialReferidos("Medio"); setValorEstrategico("estandar");
   }
 
   return (
@@ -89,7 +94,19 @@ export function CrearContactoModal({ open, onClose, onCrear }) {
               <OpcionesBotones columnas={3} opciones={OPCIONES_CERCANIA} valor={cercania} onChange={setCercania} />
             </Field>
             <Field label="Profesión"><input className={inputClass} value={profesion} onChange={(e) => setProfesion(e.target.value)} /></Field>
-            <Field label="Cumpleaños"><input type="date" className={inputClass} value={cumpleanos} onChange={(e) => setCumpleanos(e.target.value)} /></Field>
+            <div>
+              <Field label="Cumpleaños (mes y día — sin año)">
+                <div className="flex flex-col gap-2">
+                  <OpcionesBotones columnas={3} opciones={OPCIONES_MES} valor={mesCumple} onChange={setMesCumple} />
+                  <input
+                    type="number" inputMode="numeric" min="1" max="31"
+                    className={inputClass} placeholder="Día (1-31)"
+                    value={diaCumple} onChange={(e) => setDiaCumple(e.target.value)}
+                  />
+                </div>
+              </Field>
+              <p className="mt-1 text-xs text-black/40">No pedimos el año de nacimiento, solo para saludar en la fecha.</p>
+            </div>
             <Field label="Potencial de referidos">
               <OpcionesBotones columnas={3} opciones={OPCIONES_POTENCIAL} valor={potencialReferidos} onChange={setPotencialReferidos} />
             </Field>
