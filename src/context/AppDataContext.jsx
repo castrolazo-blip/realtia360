@@ -138,6 +138,16 @@ export function AppDataProvider({ children }) {
     setOportunidades((prev) => prev.map((o) => (o.id === id ? { ...o, estado, motivoCierre: motivo } : o)));
   }
 
+  async function actualizarOportunidad(id, datos) {
+    const op = oportunidades.find((o) => o.id === id);
+    if (!op) return { ok: false, error: "Oportunidad no encontrada" };
+    const actualizada = { ...op, ...datos };
+    const { error } = await supabase.from("realtia_oportunidades").update(oportunidadToRow(actualizada)).eq("id", id);
+    if (error) { console.error("actualizarOportunidad", error); return { ok: false, error: error.message }; }
+    setOportunidades((prev) => prev.map((o) => (o.id === id ? actualizada : o)));
+    return { ok: true };
+  }
+
   async function crearCaptacion(data) {
     const { data: row, error } = await supabase
       .from("realtia_captaciones")
@@ -277,7 +287,7 @@ export function AppDataProvider({ children }) {
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil,
     contactos, oportunidades, actividades, captaciones,
     contactoNombre, registrarContacto, agregarNota,
-    crearContacto, actualizarContacto, crearOportunidad, cerrarOportunidad,
+    crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, cerrarOportunidad,
     crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, guardarACM, guardarDescripcionIA,
     crearActividad, completarActividad, reprogramarActividad, cancelarActividad,
     cargarDatosDemo,
