@@ -5,12 +5,14 @@ import { formatMoney } from "../../lib/format.js";
 import { formatDia, formatHora } from "../../lib/dates.js";
 import { CrearOportunidadModal } from "./CrearOportunidadModal.jsx";
 import { CerrarModal } from "./CerrarModal.jsx";
+import { AgendarSeguimientoModal } from "./AgendarSeguimientoModal.jsx";
 
 const OPCIONES_ETAPA = ETAPAS.map((e) => ({ value: e, label: ETAPA_LABEL[e] }));
 
-export function DetalleOportunidadModal({ id, oportunidades, contactos, contactoNombre, onClose, onAbrirContacto, onActualizar, onCerrar }) {
+export function DetalleOportunidadModal({ id, oportunidades, contactos, contactoNombre, onClose, onAbrirContacto, onActualizar, onCerrar, onAgendarSeguimiento }) {
   const [editando, setEditando] = useState(false);
   const [cerrarAbierto, setCerrarAbierto] = useState(false);
+  const [agendarAbierto, setAgendarAbierto] = useState(false);
   const o = oportunidades.find((x) => x.id === id);
   if (!id || !o) return null;
 
@@ -61,7 +63,14 @@ export function DetalleOportunidadModal({ id, oportunidades, contactos, contacto
         )}
 
         <div>
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-black/40">Próxima acción</h3>
+          <div className="mb-1 flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-black/40">Próxima acción</h3>
+            {o.estado === "activa" && (
+              <button onClick={() => setAgendarAbierto(true)} className="text-xs font-semibold text-brand-700 hover:text-brand-800">
+                📅 {o.proximaAccion ? "Reagendar" : "Agendar"}
+              </button>
+            )}
+          </div>
           {o.proximaAccion ? (
             <p className="text-sm text-gray-800">
               {o.proximaAccion}
@@ -93,6 +102,11 @@ export function DetalleOportunidadModal({ id, oportunidades, contactos, contacto
       <CerrarModal
         id={cerrarAbierto ? o.id : null} onClose={() => setCerrarAbierto(false)}
         onCerrar={(estado, motivo) => { onCerrar(o.id, estado, motivo); setCerrarAbierto(false); onClose(); }}
+      />
+      <AgendarSeguimientoModal
+        open={agendarAbierto} onClose={() => setAgendarAbierto(false)}
+        tituloInicial={o.proximaAccion} fechaInicial={o.proximaFecha}
+        onAgendar={(titulo, fechaISO) => onAgendarSeguimiento(o.id, o.contactoId, titulo, fechaISO)}
       />
     </Modal>
   );

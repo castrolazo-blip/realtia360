@@ -9,7 +9,7 @@ import { CerrarModal } from "./CerrarModal.jsx";
 import { DetalleOportunidadModal } from "./DetalleOportunidadModal.jsx";
 
 export function Oportunidades() {
-  const { contactos, oportunidades, contactoNombre, crearOportunidad, actualizarOportunidad, cerrarOportunidad, abrirExpediente } = useAppData();
+  const { contactos, oportunidades, contactoNombre, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad, abrirExpediente } = useAppData();
   const [soloActivas, setSoloActivas] = useState(true);
   const [crearAbierto, setCrearAbierto] = useState(false);
   const [cerrarObjetivo, setCerrarObjetivo] = useState(null);
@@ -69,6 +69,7 @@ export function Oportunidades() {
       <DetalleOportunidadModal
         id={detalleId} oportunidades={oportunidades} contactos={contactos} contactoNombre={contactoNombre}
         onClose={() => setDetalleId(null)} onAbrirContacto={abrirExpediente} onActualizar={actualizarOportunidad} onCerrar={cerrarOportunidad}
+        onAgendarSeguimiento={agendarSeguimientoOportunidad}
       />
     </div>
   );

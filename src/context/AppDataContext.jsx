@@ -148,6 +148,13 @@ export function AppDataProvider({ children }) {
     return { ok: true };
   }
 
+  // Agenda de verdad la próxima acción de una oportunidad: crea una actividad real (que
+  // aparece en la Agenda) en vez de dejar la fecha como un simple texto suelto en la tarjeta.
+  async function agendarSeguimientoOportunidad(oportunidadId, contactoId, titulo, fechaHoraISO) {
+    await crearActividad({ contactoId, oportunidadId, tipo: "seguimiento", titulo, fechaHora: fechaHoraISO, estado: "pendiente" });
+    return actualizarOportunidad(oportunidadId, { proximaAccion: titulo, proximaFecha: fechaHoraISO });
+  }
+
   async function crearCaptacion(data) {
     const { data: row, error } = await supabase
       .from("realtia_captaciones")
@@ -287,7 +294,7 @@ export function AppDataProvider({ children }) {
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil,
     contactos, oportunidades, actividades, captaciones,
     contactoNombre, registrarContacto, agregarNota,
-    crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, cerrarOportunidad,
+    crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad,
     crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, guardarACM, guardarDescripcionIA,
     crearActividad, completarActividad, reprogramarActividad, cancelarActividad,
     cargarDatosDemo,
