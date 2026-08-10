@@ -133,9 +133,10 @@ export function AppDataProvider({ children }) {
   }
 
   async function cerrarOportunidad(id, estado, motivo) {
-    const { error } = await supabase.from("realtia_oportunidades").update({ estado, motivo_cierre: motivo }).eq("id", id);
+    const cerradaEn = new Date().toISOString();
+    const { error } = await supabase.from("realtia_oportunidades").update({ estado, motivo_cierre: motivo, cerrada_en: cerradaEn }).eq("id", id);
     if (error) { console.error("cerrarOportunidad", error); return; }
-    setOportunidades((prev) => prev.map((o) => (o.id === id ? { ...o, estado, motivoCierre: motivo } : o)));
+    setOportunidades((prev) => prev.map((o) => (o.id === id ? { ...o, estado, motivoCierre: motivo, cerradaEn } : o)));
   }
 
   async function actualizarOportunidad(id, datos) {
@@ -272,6 +273,9 @@ export function AppDataProvider({ children }) {
     ubicacion: perfil?.ubicacion || agencyPorDefecto.ubicacion,
     telefono: perfil?.telefono || "",
     plan: perfil?.plan || "basic",
+    metaAnual: perfil?.metaAnual || null,
+    comisionPromedioPct: perfil?.comisionPromedioPct || null,
+    precioPromedioVenta: perfil?.precioPromedioVenta || null,
   };
 
   async function actualizarPerfil(datos) {
@@ -289,9 +293,26 @@ export function AppDataProvider({ children }) {
     return { ok: true };
   }
 
+  // La meta de negocio del agente (ingresos anuales + supuestos de comisión y precio
+  // promedio) vive en el mismo perfil, pero es un concepto aparte de sus datos de
+  // contacto — de ahí la función separada.
+  async function actualizarMeta(datos) {
+    const { error } = await supabase
+      .from("realtia_perfiles")
+      .update({
+        meta_anual: datos.metaAnual,
+        comision_promedio_pct: datos.comisionPromedioPct,
+        precio_promedio_venta: datos.precioPromedioVenta,
+      })
+      .eq("id", agenteId);
+    if (error) { console.error("actualizarMeta", error); return { ok: false, error: error.message }; }
+    setPerfil((prev) => ({ ...prev, ...datos }));
+    return { ok: true };
+  }
+
   const value = {
     vista, setVista,
-    cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil,
+    cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil, actualizarMeta,
     contactos, oportunidades, actividades, captaciones,
     contactoNombre, registrarContacto, agregarNota,
     crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad,

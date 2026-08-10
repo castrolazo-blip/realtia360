@@ -9,6 +9,9 @@ import { AccionModal } from "../../components/shared/AccionModal.jsx";
 import { PerfilModal } from "../../components/shared/PerfilModal.jsx";
 import { Confianza } from "./Confianza.jsx";
 import { generarSugerencias } from "./sugerencias.js";
+import { calcularNegocio, metaConfigurada, generarAccionesCoach } from "./negocio.js";
+import { ConfigurarMetaModal } from "./ConfigurarMetaModal.jsx";
+import { formatMoney } from "../../lib/format.js";
 
 export function Inicio() {
   const {
@@ -20,6 +23,7 @@ export function Inicio() {
   const [enFoco, setEnFoco] = useState(null);
   const [accion, setAccion] = useState(null);
   const [perfilAbierto, setPerfilAbierto] = useState(false);
+  const [metaAbierta, setMetaAbierta] = useState(false);
 
   const { vencidas, deHoy, proximas } = useMemo(() => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -34,6 +38,8 @@ export function Inicio() {
   }, [actividades]);
 
   const sugerencias = useMemo(() => generarSugerencias(contactos), [contactos]);
+  const negocio = useMemo(() => calcularNegocio(oportunidades, agency), [oportunidades, agency]);
+  const accionesCoach = useMemo(() => generarAccionesCoach(oportunidades, contactoNombre), [oportunidades, contactoNombre]);
   const alertas = oportunidades.filter((o) => o.estado === "activa" && (!o.proximaAccion || !o.proximaFecha));
   const captacionesIncompletas = (captaciones || []).filter((c) => c.estado !== "publicada" && c.checklist.some((it) => !it.completado));
   const todasHoyYVencidas = [...vencidas, ...deHoy];
@@ -80,25 +86,72 @@ export function Inicio() {
       </div>
 
       <div className="px-4 py-5 lg:px-0 lg:py-0">
-        {/* Banner hero */}
-        <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-brand-900 p-6 text-white shadow-premium lg:p-8">
-          <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-gold-400/10" />
-          <div className="absolute -bottom-10 right-10 h-28 w-28 rounded-full bg-white/5" />
-          <p className="relative font-display text-lg font-semibold leading-snug lg:text-2xl">
-            {alertas.length > 0 ? `${alertas.length} oportunidad(es) sin próxima acción` : "Tu cartera está al día"}
-          </p>
-          <p className="relative mt-1 text-sm text-white/60">
-            {alertas.length > 0 ? "Resuélvelo antes de que se te escape el negocio." : "Sigue así — cero pendientes críticos por ahora."}
-          </p>
-          <div className="relative mt-4 flex flex-wrap gap-2">
-            <button onClick={irAOportunidades} className="inline-flex items-center gap-1.5 rounded-full bg-gold-500 px-4 py-2 text-sm font-semibold text-ink-950">
-              <Icon.Bolt className="h-4 w-4" /> Ver oportunidades
-            </button>
-            <button onClick={() => manejarAccionRapida("agenda")} className="inline-flex items-center gap-1.5 rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white">
-              <Icon.Calendar className="h-4 w-4" /> Agendar seguimiento
+        {/* Tu meta — el corazón de Realtia Coach: no solo organiza, dice hacia dónde vas */}
+        {negocio ? (
+          <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-brand-900 p-6 text-white shadow-premium lg:p-8">
+            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-gold-400/10" />
+            <div className="absolute -bottom-10 right-10 h-28 w-28 rounded-full bg-white/5" />
+            <div className="relative flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Tu meta {new Date().getFullYear()}</p>
+                <p className="mt-1 font-display text-2xl font-semibold lg:text-3xl">{formatMoney(negocio.metaAnual)}</p>
+              </div>
+              <button onClick={() => setMetaAbierta(true)} className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20">
+                Editar
+              </button>
+            </div>
+
+            <div className="relative mt-4 h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-gold-500 transition-all" style={{ width: `${negocio.progresoPct}%` }} />
+            </div>
+            <p className="relative mt-2 text-sm text-white/70">
+              {negocio.faltante > 0
+                ? `Te faltan ${formatMoney(negocio.faltante)} para tu meta — vas al ${negocio.progresoPct}%.`
+                : "¡Ya alcanzaste tu meta de este año! 🎉"}
+            </p>
+
+            <div className="relative mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <MetaStat label="Cerrado este año" valor={formatMoney(negocio.cerradoEsteAnio)} />
+              <MetaStat label="Pipeline ponderado" valor={formatMoney(negocio.pipelinePonderado)} />
+              <MetaStat label="Proyección" valor={formatMoney(negocio.proyeccion)} />
+              <MetaStat label="Cierres que faltan" valor={negocio.cierresFaltantes != null ? `${negocio.cierresFaltantes} de ${negocio.cierresNecesarios}` : "—"} />
+            </div>
+          </div>
+        ) : (
+          <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-brand-900 p-6 text-white shadow-premium lg:p-8">
+            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-gold-400/10" />
+            <div className="absolute -bottom-10 right-10 h-28 w-28 rounded-full bg-white/5" />
+            <p className="relative font-display text-lg font-semibold leading-snug lg:text-2xl">Definí tu meta de este año</p>
+            <p className="relative mt-1 text-sm text-white/60">Realtia calcula cuántos cierres necesitás y qué tan cerca estás, a partir de tu embudo actual.</p>
+            <button onClick={() => setMetaAbierta(true)} className="relative mt-4 inline-flex items-center gap-1.5 rounded-full bg-gold-500 px-4 py-2 text-sm font-semibold text-ink-950">
+              <Icon.Bolt className="h-4 w-4" /> Configurar mi meta
             </button>
           </div>
-        </div>
+        )}
+
+        {/* Hoy te recomiendo — prioriza señales reales de la cartera, sin IA */}
+        {accionesCoach.length > 0 && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-base font-semibold text-ink-950">Hoy te recomiendo</h2>
+              <span className="text-xs font-medium text-brand-700">{accionesCoach.length}</span>
+            </div>
+            <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
+              {accionesCoach.map((a) => (
+                <button
+                  key={a.id} onClick={irAOportunidades}
+                  className="flex items-start gap-3 rounded-2xl border border-black/5 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-card"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-lg">{a.icono}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900">{a.titulo}</p>
+                    <p className="mt-0.5 text-xs text-black/50">{a.detalle}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {contactos.length === 0 && (
           <div className="mb-6 flex flex-col items-start gap-3 rounded-3xl border border-dashed border-brand-200 bg-brand-50/50 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -239,6 +292,16 @@ export function Inicio() {
         onCancelar={() => { cancelarActividad(enFoco.id); setEnFoco(null); setAccion(null); }}
       />
       <PerfilModal open={perfilAbierto} onClose={() => setPerfilAbierto(false)} />
+      <ConfigurarMetaModal open={metaAbierta} onClose={() => setMetaAbierta(false)} />
+    </div>
+  );
+}
+
+function MetaStat({ label, valor }) {
+  return (
+    <div className="rounded-2xl bg-white/5 p-3">
+      <p className="font-display text-lg font-semibold text-white lg:text-xl">{valor}</p>
+      <p className="mt-0.5 text-[11px] text-white/50">{label}</p>
     </div>
   );
 }

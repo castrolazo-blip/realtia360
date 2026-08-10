@@ -55,6 +55,8 @@ export function oportunidadFromRow(row) {
     proximaAccion: row.proxima_accion,
     proximaFecha: row.proxima_fecha,
     motivoCierre: row.motivo_cierre,
+    creadoEn: row.created_at,
+    cerradaEn: row.cerrada_en,
   };
 }
 export function oportunidadToRow(o) {
@@ -68,6 +70,7 @@ export function oportunidadToRow(o) {
     proxima_accion: o.proximaAccion ?? null,
     proxima_fecha: o.proximaFecha ?? null,
     motivo_cierre: o.motivoCierre ?? null,
+    cerrada_en: o.cerradaEn ?? null,
   };
 }
 
@@ -154,5 +157,8 @@ export function perfilFromRow(row) {
     ubicacion: row.ubicacion,
     plan: row.plan,
     telefono: row.telefono || "",
+    metaAnual: row.meta_anual,
+    comisionPromedioPct: row.comision_promedio_pct,
+    precioPromedioVenta: row.precio_promedio_venta,
   };
 }
