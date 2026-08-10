@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal, Field, Badge, OpcionesBotones } from "../../components/ui/index.js";
+import { Modal, Field, Badge, Button, OpcionesBotones } from "../../components/ui/index.js";
 import { TIPO_OP_LABEL, ETAPA_LABEL, ETAPAS } from "../../constants/oportunidades.js";
 import { formatMoney } from "../../lib/format.js";
 import { formatDia, formatHora } from "../../lib/dates.js";
@@ -17,7 +17,7 @@ export function DetalleOportunidadModal({ id, oportunidades, contactos, contacto
   if (!id || !o) return null;
 
   return (
-    <Modal open onClose={onClose} title={`${TIPO_OP_LABEL[o.tipo]} · ${contactoNombre(o.contactoId)}`}>
+    <Modal open onClose={onClose} mostrarCerrar={false} title={`${TIPO_OP_LABEL[o.tipo]} · ${contactoNombre(o.contactoId)}`}>
       <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-wrap gap-2">
@@ -93,6 +93,8 @@ export function DetalleOportunidadModal({ id, oportunidades, contactos, contacto
             Cerrar oportunidad…
           </button>
         )}
+
+        <Button onClick={onClose} className="w-full !py-3">Guardar</Button>
       </div>
 
       <CrearOportunidadModal
