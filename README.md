@@ -83,25 +83,23 @@ trigger de Postgres. Toda su cartera vive en Supabase, protegida por Row Level S
 fila pertenece a un `agente_id` y las políticas solo dejan ver/editar las propias, así que un
 agente nunca puede ver los datos de otro.
 
-**Tablas** (proyecto Supabase, prefijo `realtia_` — ver nota abajo):
-`realtia_perfiles`, `realtia_contactos`, `realtia_oportunidades`, `realtia_actividades`,
-`realtia_captaciones`, `realtia_oficinas`. El perfil de plan (`basic` / `gold` / `premium`)
-vive en `realtia_perfiles.plan`; la oficina y el rol (`asesor` / `broker`) del agente viven
-en `realtia_perfiles.oficina_id` y `realtia_perfiles.rol` (ver sección "Oficina: rol de
-Broker y Office Pulse" más abajo).
+**Tablas** (proyecto Supabase propio de Realtia — ver nota abajo, prefijo `realtia_` por
+historia, no por necesidad de aislarse de otro sistema): `realtia_perfiles`,
+`realtia_contactos`, `realtia_oportunidades`, `realtia_actividades`, `realtia_captaciones`,
+`realtia_oficinas`. El perfil de plan (`basic` / `gold` / `premium`) vive en
+`realtia_perfiles.plan`; la oficina y el rol (`asesor` / `broker`) del agente viven en
+`realtia_perfiles.oficina_id` y `realtia_perfiles.rol` (ver sección "Oficina: rol de Broker
+y Office Pulse" más abajo).
 
-**Nota sobre el proyecto de Supabase usado:** por un límite de proyectos gratuitos en la
-cuenta, estas tablas viven dentro del proyecto Supabase existente `sport-car-system` (otro
-sistema de negocio del propietario), aisladas por el prefijo `realtia_` y con sus propias
-políticas de RLS — no comparten tablas ni datos con ese sistema. Si en el futuro se libera un
-proyecto propio (o se sube de plan), migrar es solo correr el mismo script de migración en el
-proyecto nuevo y actualizar `src/config/supabase.js` (o las variables de entorno
-`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`).
-
-**Hallazgo de seguridad, sin relación con Realtia:** al revisar ese proyecto se detectó que
-50 tablas preexistentes de `sport-car-system` tienen Row Level Security desactivado (cualquiera
-con la clave pública del proyecto podría leer/modificarlas). No se tocó — es un tema aparte
-del dueño del proyecto, pero queda documentado aquí para que no se pierda.
+**Nota sobre el proyecto de Supabase:** Realtia tiene su propio proyecto de Supabase
+(`realtia`, ref `jnkrrbbzghtdzylpjsgc`, plan free, $0/mes), separado del proyecto
+`sport-car-system` (otro sistema de negocio del propietario) donde vivió temporalmente al
+principio por un límite de proyectos gratuitos en la cuenta. El esquema completo —tablas,
+RLS, funciones y trigger de alta— está en
+`supabase/migrations/20260819180000_realtia_schema.sql`, pensado como línea base
+reproducible de este proyecto. Los 3 perfiles de prueba que existían en el proyecto
+compartido (datos de prueba, no de producción) no se migraron a propósito; el proyecto
+nuevo arrancó limpio.
 
 **Límite de pruebas en este entorno:** el sandbox donde se desarrolló esta fase bloquea el
 acceso saliente al dominio de la API de Supabase, así que el flujo de registro/login no pudo
@@ -127,7 +125,7 @@ del proyecto de Supabase (yo no tengo forma de hacerlo por seguridad — un agen
 acceso a subir secretos). Con la CLI de Supabase:
 
 ```bash
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref ivvjbuhppuwpgefwqpuz
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref jnkrrbbzghtdzylpjsgc
 ```
 
 o desde el dashboard: **Project Settings → Edge Functions → Manage secrets**. Mientras no esté
@@ -179,7 +177,7 @@ hoy cualquier cuenta nueva se crea en `basic` pero puede usar todo sin restricci
 - Control de acceso real por plan (bloquear funciones/límites según Basic, Gold o Premium).
 - Cambiar de plan desde la app (hoy solo se puede editar `plan` directamente en la tabla).
 - Recuperar contraseña / editar perfil desde la UI.
-- Proyecto de Supabase dedicado para Realtia (ver nota arriba).
+- Cargar `ANTHROPIC_API_KEY` como secreto del proyecto de Supabase (ver sección de arriba).
 - Empaquetado como app de Android/iOS (esta base en Vite + React está lista para envolverse
   con Capacitor sin reescribir pantallas).
 
