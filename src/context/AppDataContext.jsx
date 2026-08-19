@@ -31,6 +31,12 @@ export function AppDataProvider({ children }) {
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState("");
 
+  // Solo se llenan para un Broker: su equipo (perfiles de la misma oficina) y la cartera
+  // de toda la oficina, de solo lectura (el RLS de la base de datos es quien realmente
+  // impide que un asesor vea esto — este estado solo existe si el perfil es broker).
+  const [equipo, setEquipo] = useState([]);
+  const [oficinaCartera, setOficinaCartera] = useState({ contactos: [], oportunidades: [], captaciones: [], actividades: [] });
+
   const [crearContactoAbierto, setCrearContactoAbierto] = useState(false);
   const [crearOportunidadAbierto, setCrearOportunidadAbierto] = useState(false);
   const [crearCaptacionAbierto, setCrearCaptacionAbierto] = useState(false);
@@ -65,11 +71,34 @@ export function AppDataProvider({ children }) {
           .select().single();
         if (nuevoPerfil) perfilRes = { data: nuevoPerfil };
       }
-      setPerfil(perfilRes.data ? perfilFromRow(perfilRes.data) : null);
+      const perfilMapeado = perfilRes.data ? perfilFromRow(perfilRes.data) : null;
+      setPerfil(perfilMapeado);
       setContactos((contactosRes.data || []).map(contactoFromRow));
       setOportunidades((oportunidadesRes.data || []).map(oportunidadFromRow));
       setActividades((actividadesRes.data || []).map(actividadFromRow));
       setCaptaciones((captacionesRes.data || []).map(captacionFromRow));
+
+      // Office Pulse: si el perfil es de un Broker, trae además el equipo y la cartera de
+      // toda la oficina (el RLS deja pasar estas filas solo porque el perfil es broker).
+      if (perfilMapeado?.rol === "broker" && perfilMapeado.oficinaId) {
+        const [equipoRes, contactosOfRes, oportunidadesOfRes, captacionesOfRes, actividadesOfRes] = await Promise.all([
+          supabase.from("realtia_perfiles").select("id, nombre_agente, rol"),
+          supabase.from("realtia_contactos").select("id, agente_id, clasificacion, ultimo_contacto, created_at"),
+          supabase.from("realtia_oportunidades").select("id, agente_id, etapa, estado, valor, created_at, cerrada_en"),
+          supabase.from("realtia_captaciones").select("id, agente_id, estado, precio, comision_pct, created_at"),
+          supabase.from("realtia_actividades").select("id, agente_id, estado, fecha_hora"),
+        ]);
+        setEquipo(equipoRes.data || []);
+        setOficinaCartera({
+          contactos: contactosOfRes.data || [],
+          oportunidades: oportunidadesOfRes.data || [],
+          captaciones: captacionesOfRes.data || [],
+          actividades: actividadesOfRes.data || [],
+        });
+      } else {
+        setEquipo([]);
+        setOficinaCartera({ contactos: [], oportunidades: [], captaciones: [], actividades: [] });
+      }
     } catch (err) {
       console.error("recargarTodo", err);
       setErrorCarga("No se pudo cargar tu cartera. Revisa tu conexión e intenta de nuevo.");
@@ -276,6 +305,8 @@ export function AppDataProvider({ children }) {
     metaAnual: perfil?.metaAnual || null,
     comisionPromedioPct: perfil?.comisionPromedioPct || null,
     precioPromedioVenta: perfil?.precioPromedioVenta || null,
+    rol: perfil?.rol || "asesor",
+    oficinaId: perfil?.oficinaId || null,
   };
 
   async function actualizarPerfil(datos) {
@@ -314,6 +345,7 @@ export function AppDataProvider({ children }) {
     vista, setVista,
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil, actualizarMeta,
     contactos, oportunidades, actividades, captaciones,
+    equipo, oficinaCartera,
     contactoNombre, registrarContacto, agregarNota,
     crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad,
     crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, guardarACM, guardarDescripcionIA,

@@ -152,6 +152,7 @@ export function captacionToRow(c) {
 
 export function perfilFromRow(row) {
   return {
+    id: row.id,
     nombreAgente: row.nombre_agente,
     nombreOficina: row.nombre_oficina,
     ubicacion: row.ubicacion,
@@ -160,5 +161,7 @@ export function perfilFromRow(row) {
     metaAnual: row.meta_anual,
     comisionPromedioPct: row.comision_promedio_pct,
     precioPromedioVenta: row.precio_promedio_venta,
+    oficinaId: row.oficina_id ?? null,
+    rol: row.rol || "asesor",
   };
 }

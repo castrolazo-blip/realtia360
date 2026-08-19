@@ -51,7 +51,8 @@ src/
 
   features/
     auth/LoginScreen.jsx     pantalla de inicio de sesión / registro
-    inicio/                 pantalla de inicio (feed en móvil, dashboard en escritorio)
+    inicio/                 pantalla de inicio del asesor (feed en móvil, dashboard en escritorio)
+    oficina/                Office Pulse — pantalla de inicio del broker (equipo de la oficina)
     contactos/               CRM + Círculo de Influencia
     oportunidades/           embudo de ventas
     captacion/                captación guiada (Método DEC), ACM, ficha imprimible, kanban
@@ -84,8 +85,10 @@ agente nunca puede ver los datos de otro.
 
 **Tablas** (proyecto Supabase, prefijo `realtia_` — ver nota abajo):
 `realtia_perfiles`, `realtia_contactos`, `realtia_oportunidades`, `realtia_actividades`,
-`realtia_captaciones`. El perfil de plan (`basic` / `gold` / `premium`) vive en
-`realtia_perfiles.plan`.
+`realtia_captaciones`, `realtia_oficinas`. El perfil de plan (`basic` / `gold` / `premium`)
+vive en `realtia_perfiles.plan`; la oficina y el rol (`asesor` / `broker`) del agente viven
+en `realtia_perfiles.oficina_id` y `realtia_perfiles.rol` (ver sección "Oficina: rol de
+Broker y Office Pulse" más abajo).
 
 **Nota sobre el proyecto de Supabase usado:** por un límite de proyectos gratuitos en la
 cuenta, estas tablas viven dentro del proyecto Supabase existente `sport-car-system` (otro
@@ -130,6 +133,39 @@ supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref ivvjbuhppuwpgefw
 o desde el dashboard: **Project Settings → Edge Functions → Manage secrets**. Mientras no esté
 configurada, el botón "Generar con IA" muestra un mensaje de error indicándolo, sin romper el
 resto de la app.
+
+## Oficina: rol de Broker y Office Pulse
+
+Cada perfil tiene ahora un `rol` (`asesor` o `broker`) y pertenece a una `realtia_oficinas`.
+Cuando alguien se registra, el trigger de Postgres (`realtia_handle_new_user`) lo une a la
+oficina existente cuyo nombre coincida (sin distinguir mayúsculas) con el que escribió, o
+crea una oficina nueva si es la primera vez que se usa ese nombre — quien la crea queda
+como su broker; quien se suma después, como asesor. Es una heurística simple por nombre de
+oficina, sin flujo de invitación todavía; suficiente para esta fase de pruebas.
+
+Un Broker ve, **solo en modo lectura**, la cartera de todos los agentes de su oficina —
+nunca puede editarla ni borrarla, y jamás ve la de una oficina distinta a la suya. Esto lo
+resuelve el RLS de Postgres, no el frontend: hay una política adicional de `SELECT` por
+tabla (`realtia_contactos`, `realtia_oportunidades`, `realtia_captaciones`,
+`realtia_actividades`, `realtia_perfiles`) que solo deja pasar filas de agentes de la misma
+oficina cuando quien consulta tiene `rol = 'broker'`, apoyada en dos funciones
+`security definer` (`realtia_mi_oficina_id()`, `realtia_soy_broker()`) que evitan que la
+política se consulte a sí misma de forma recursiva. Ver
+`supabase/migrations/20260819173000_office_layer.sql`.
+
+En el frontend, `AppDataContext` carga esa cartera de oficina (`equipo`,
+`oficinaCartera`) únicamente cuando el perfil es de un broker, y el inicio de la app
+(`App.jsx`) muestra **Office Pulse** (`features/oficina/OfficePulse.jsx`) en vez de la
+pantalla de inicio de un asesor: indicadores de toda la oficina (contactos, oportunidades
+activas, captaciones publicadas, cierres, producción cerrada) y una tabla por asesor. Un
+asesor sigue viendo únicamente su propio Inicio — Contactos, Oportunidades, Captación y
+Agenda siguen siendo su cartera personal en ambos roles.
+
+**Pendiente de esta capa:** vista de detalle por asesor (drill-down), un flujo real de
+invitación a la oficina (hoy depende de escribir el mismo nombre), y los módulos de
+Propiedades/Requerimientos/Expedientes como inventario compartido de oficina (todavía la
+"cartera" es la de Realtia — contactos, oportunidades y captaciones por agente — no un
+inventario único de propiedades de toda la oficina).
 
 ## Comercialización por planes
 

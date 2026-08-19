@@ -3,6 +3,7 @@ import { AppDataProvider, useAppData } from "./context/AppDataContext.jsx";
 import { AppShell } from "./layouts/AppShell.jsx";
 import { LoginScreen } from "./features/auth/LoginScreen.jsx";
 import { Inicio } from "./features/inicio/Inicio.jsx";
+import { OfficePulse } from "./features/oficina/OfficePulse.jsx";
 import { Contactos } from "./features/contactos/Contactos.jsx";
 import { CrearContactoModal } from "./features/contactos/CrearContactoModal.jsx";
 import { DetalleContactoModal } from "./features/contactos/DetalleContactoModal.jsx";
@@ -15,17 +16,25 @@ import { CrearActividadModal } from "./features/agenda/CrearActividadModal.jsx";
 import { ContactarModal } from "./components/shared/ContactarModal.jsx";
 
 const VISTAS = {
-  inicio: Inicio,
   contactos: Contactos,
   oportunidades: Oportunidades,
   captacion: Captacion,
   agenda: Agenda,
 };
 
+// El inicio del Broker es Office Pulse (su equipo), no su propia cartera individual —
+// el resto de la navegación (Contactos, Oportunidades, Captación, Agenda) sigue siendo
+// su cartera personal, igual que la de cualquier asesor.
+function InicioSegunRol() {
+  const { agency } = useAppData();
+  return agency.rol === "broker" ? <OfficePulse /> : <Inicio />;
+}
+
 function VistaActiva() {
   const { vista } = useAppData();
+  if (vista === "inicio") return <InicioSegunRol />;
   const Vista = VISTAS[vista] || Inicio;
-  return vista === "inicio" ? <Vista /> : (
+  return (
     <div className="px-4 py-6 lg:px-0 lg:py-0">
       <Vista />
     </div>
