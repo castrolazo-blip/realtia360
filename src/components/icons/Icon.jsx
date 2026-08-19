@@ -21,6 +21,19 @@ export const Icon = {
       <circle cx="12" cy="12" r="1" fill="currentColor" />
     </svg>
   ),
+  Building: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <rect x="4" y="3.5" width="11" height="17" rx="1.2" />
+      <path strokeLinecap="round" d="M15 20v-6.5h5V20M7.5 7.5h1.5M11 7.5h1.5M7.5 11h1.5M11 11h1.5M7.5 14.5h1.5M11 14.5h1.5" />
+    </svg>
+  ),
+  ListSearch: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <path strokeLinecap="round" d="M4 6h9M4 11h6" />
+      <circle cx="15.5" cy="15.5" r="4" />
+      <path strokeLinecap="round" d="m19.5 19.5 2.3 2.3" />
+    </svg>
+  ),
   Calendar: (p) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
       <rect x="3.3" y="4.8" width="17.4" height="15.4" rx="2.2" />

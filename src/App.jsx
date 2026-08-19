@@ -13,12 +13,17 @@ import { Captacion } from "./features/captacion/Captacion.jsx";
 import { CaptacionGuiada } from "./features/captacion/CaptacionGuiada.jsx";
 import { Agenda } from "./features/agenda/Agenda.jsx";
 import { CrearActividadModal } from "./features/agenda/CrearActividadModal.jsx";
+import { Propiedades } from "./features/propiedades/Propiedades.jsx";
+import { Requerimientos } from "./features/requerimientos/Requerimientos.jsx";
+import { CrearRequerimientoModal } from "./features/requerimientos/CrearRequerimientoModal.jsx";
 import { ContactarModal } from "./components/shared/ContactarModal.jsx";
 
 const VISTAS = {
   contactos: Contactos,
   oportunidades: Oportunidades,
   captacion: Captacion,
+  propiedades: Propiedades,
+  requerimientos: Requerimientos,
   agenda: Agenda,
 };
 
@@ -48,6 +53,7 @@ function GlobalModals() {
     crearOportunidad, crearOportunidadAbierto, setCrearOportunidadAbierto,
     crearCaptacion, crearCaptacionAbierto, setCrearCaptacionAbierto,
     crearActividad, crearActividadAbierto, setCrearActividadAbierto,
+    crearRequerimiento, crearRequerimientoAbierto, setCrearRequerimientoAbierto,
     contactarTipo, setContactarTipo,
   } = useAppData();
 
@@ -57,6 +63,7 @@ function GlobalModals() {
       <CrearOportunidadModal open={crearOportunidadAbierto} onClose={() => setCrearOportunidadAbierto(false)} contactos={contactos} onCrear={(d) => { crearOportunidad(d); setCrearOportunidadAbierto(false); }} />
       <CaptacionGuiada open={crearCaptacionAbierto} onClose={() => setCrearCaptacionAbierto(false)} contactos={contactos} onCrear={(d) => { crearCaptacion(d); setCrearCaptacionAbierto(false); }} />
       <CrearActividadModal open={crearActividadAbierto} onClose={() => setCrearActividadAbierto(false)} contactos={contactos} onCrear={(d) => { crearActividad(d); setCrearActividadAbierto(false); }} />
+      <CrearRequerimientoModal open={crearRequerimientoAbierto} onClose={() => setCrearRequerimientoAbierto(false)} contactos={contactos} onCrear={(d) => { crearRequerimiento(d); setCrearRequerimientoAbierto(false); }} />
       <ContactarModal tipo={contactarTipo} onClose={() => setContactarTipo(null)} contactos={contactos} onRegistrar={registrarContacto} />
       <DetalleContactoModal />
     </>

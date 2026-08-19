@@ -56,6 +56,8 @@ src/
     contactos/               CRM + Círculo de Influencia
     oportunidades/           embudo de ventas
     captacion/                captación guiada (Método DEC), ACM, ficha imprimible, kanban
+    propiedades/             inventario publicado de toda la oficina (solo lectura)
+    requerimientos/           lo que busca un comprador + matching contra el inventario
     agenda/                   lista + calendario de actividades
 ```
 
@@ -165,6 +167,37 @@ Propiedades/Requerimientos/Expedientes como inventario compartido de oficina (to
 "cartera" es la de Realtia — contactos, oportunidades y captaciones por agente — no un
 inventario único de propiedades de toda la oficina).
 
+## Propiedades y Requerimientos
+
+Dos módulos nuevos que conectan la captación (privada, del agente que la trabaja) con el
+resto de la oficina:
+
+- **Propiedades** (`features/propiedades`): cuando una captación llega a `estado =
+  'publicada'`, deja de ser solo del agente que la trabajó y pasa a ser inventario visible
+  para **toda la oficina** — cualquier agente puede verla (no solo el Broker), porque
+  necesita poder ofrecerla a sus propios compradores. Es de solo lectura: nadie puede
+  editar ni cambiar el estado de una propiedad que no es suya, ni ve datos del propietario
+  (eso sigue siendo privado del agente que la captó). Antes de `publicada`, la captación
+  sigue siendo privada, igual que siempre.
+- **Requerimientos** (`features/requerimientos`): lo que busca un comprador (tipo de
+  inmueble, operación, zona, rango de precio), siempre privado del agente que lo registró.
+  Cada requerimiento se compara contra el inventario de Propiedades con un matching simple
+  por reglas (`matching.js`) — tipo, operación, precio y zona, con crédito parcial cuando el
+  precio se pasa poco del rango. No usa IA ni pondera "Buyer DNA" (necesario / muy
+  importante / deseable) todavía, eso queda para una fase posterior.
+
+Esto lo permiten dos piezas nuevas en la base de datos (ver
+`supabase/migrations/20260819190000_propiedades_requerimientos.sql`): una política de RLS
+que abre `realtia_captaciones` publicadas a toda la oficina (antes solo el broker podía ver
+más allá de lo propio), y una función `realtia_directorio_oficina()` que expone únicamente
+`id`/`nombre_agente`/`rol` de los compañeros —nunca teléfono, meta anual ni comisión— para
+poder mostrar "Asesor: fulano" en una propiedad ajena sin exponer el resto de su perfil.
+
+En móvil, estos dos módulos no están en la barra inferior (`NAV_MOVIL` en `config/nav.js`
+los excluye a propósito, siguiendo el principio de no saturar la navegación táctil) — se
+llega a ellos desde los accesos rápidos de Inicio ("Ver propiedades" / "Nuevo
+requerimiento").
+
 ## Comercialización por planes
 
 `src/config/plans.js` define Basic / Gold / Premium (con límites de referencia) y
@@ -178,6 +211,9 @@ hoy cualquier cuenta nueva se crea en `basic` pero puede usar todo sin restricci
 - Cambiar de plan desde la app (hoy solo se puede editar `plan` directamente en la tabla).
 - Recuperar contraseña / editar perfil desde la UI.
 - Cargar `ANTHROPIC_API_KEY` como secreto del proyecto de Supabase (ver sección de arriba).
+- Matching de Requerimientos con ponderación tipo "Buyer DNA" (necesario / muy importante /
+  deseable) en vez de reglas fijas; y expedientes/documentos de la propiedad en Google
+  Drive (hoy las captaciones no tienen fotos, solo datos estructurados).
 - Empaquetado como app de Android/iOS (esta base en Vite + React está lista para envolverse
   con Capacitor sin reescribir pantallas).
 

@@ -8,6 +8,7 @@ import {
   oportunidadFromRow, oportunidadToRow,
   actividadFromRow, actividadToRow,
   captacionFromRow, captacionToRow,
+  requerimientoFromRow, requerimientoToRow,
   perfilFromRow,
 } from "../lib/db/mappers.js";
 import { CONTACTOS_INICIALES, OPORTUNIDADES_INICIALES, ACTIVIDADES_INICIALES, CAPTACIONES_INICIALES } from "../data/seed.js";
@@ -27,7 +28,14 @@ export function AppDataProvider({ children }) {
   const [oportunidades, setOportunidades] = useState([]);
   const [actividades, setActividades] = useState([]);
   const [captaciones, setCaptaciones] = useState([]);
+  const [requerimientos, setRequerimientos] = useState([]);
   const [perfil, setPerfil] = useState(null);
+
+  // Directorio (id + nombre + rol de los compañeros de oficina) y propiedades publicadas
+  // de toda la oficina: se cargan para cualquier agente con oficina, no solo el broker —
+  // es el inventario compartido, no la cartera privada de cada quien.
+  const [directorioOficina, setDirectorioOficina] = useState([]);
+  const [propiedadesOficina, setPropiedadesOficina] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState("");
 
@@ -41,6 +49,7 @@ export function AppDataProvider({ children }) {
   const [crearOportunidadAbierto, setCrearOportunidadAbierto] = useState(false);
   const [crearCaptacionAbierto, setCrearCaptacionAbierto] = useState(false);
   const [crearActividadAbierto, setCrearActividadAbierto] = useState(false);
+  const [crearRequerimientoAbierto, setCrearRequerimientoAbierto] = useState(false);
   const [contactarTipo, setContactarTipo] = useState(null); // 'llamar' | 'whatsapp' | 'email'
   const [expedienteId, setExpedienteId] = useState(null); // contacto cuyo expediente está abierto
 
@@ -49,12 +58,13 @@ export function AppDataProvider({ children }) {
     setCargando(true);
     setErrorCarga("");
     try {
-      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes] = await Promise.all([
+      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes, requerimientosRes] = await Promise.all([
         supabase.from("realtia_perfiles").select("*").eq("id", agenteId).maybeSingle(),
         supabase.from("realtia_contactos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_oportunidades").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_actividades").select("*").eq("agente_id", agenteId).order("fecha_hora", { ascending: false }),
         supabase.from("realtia_captaciones").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
+        supabase.from("realtia_requerimientos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
       ]);
       // Red de seguridad: si por alguna razón el trigger de la base de datos no creó el
       // perfil al registrarse, lo creamos aquí mismo con lo que haya en los metadatos de auth.
@@ -77,6 +87,22 @@ export function AppDataProvider({ children }) {
       setOportunidades((oportunidadesRes.data || []).map(oportunidadFromRow));
       setActividades((actividadesRes.data || []).map(actividadFromRow));
       setCaptaciones((captacionesRes.data || []).map(captacionFromRow));
+      setRequerimientos((requerimientosRes.data || []).map(requerimientoFromRow));
+
+      // Propiedades: inventario publicado de toda la oficina, y el directorio (id/nombre)
+      // de los compañeros para poder mostrar quién es el asesor responsable. Esto es para
+      // cualquier agente con oficina, no solo el broker.
+      if (perfilMapeado?.oficinaId) {
+        const [directorioRes, propiedadesOfRes] = await Promise.all([
+          supabase.rpc("realtia_directorio_oficina"),
+          supabase.from("realtia_captaciones").select("*").eq("estado", "publicada").order("created_at", { ascending: false }),
+        ]);
+        setDirectorioOficina(directorioRes.data || []);
+        setPropiedadesOficina((propiedadesOfRes.data || []).map(captacionFromRow));
+      } else {
+        setDirectorioOficina([]);
+        setPropiedadesOficina([]);
+      }
 
       // Office Pulse: si el perfil es de un Broker, trae además el equipo y la cartera de
       // toda la oficina (el RLS deja pasar estas filas solo porque el perfil es broker).
@@ -112,6 +138,7 @@ export function AppDataProvider({ children }) {
   }, [recargarTodo]);
 
   const contactoNombre = (id) => contactos.find((c) => c.id === id)?.nombre || "—";
+  const nombreAgente = (id) => (id === agenteId ? agency.nombreAgente : directorioOficina.find((p) => p.id === id)?.nombre_agente) || "—";
   const abrirExpediente = (id) => setExpedienteId(id);
   const cerrarExpediente = () => setExpedienteId(null);
 
@@ -225,6 +252,25 @@ export function AppDataProvider({ children }) {
     return { ok: true };
   }
 
+  async function crearRequerimiento(data) {
+    const { data: row, error } = await supabase
+      .from("realtia_requerimientos")
+      .insert({ agente_id: agenteId, ...requerimientoToRow({ estado: "activo", ...data }) })
+      .select().single();
+    if (error) { console.error("crearRequerimiento", error); return; }
+    setRequerimientos((prev) => [requerimientoFromRow(row), ...prev]);
+  }
+
+  async function actualizarRequerimiento(id, datos) {
+    const req = requerimientos.find((r) => r.id === id);
+    if (!req) return { ok: false, error: "Requerimiento no encontrado" };
+    const actualizado = { ...req, ...datos };
+    const { error } = await supabase.from("realtia_requerimientos").update(requerimientoToRow(actualizado)).eq("id", id);
+    if (error) { console.error("actualizarRequerimiento", error); return { ok: false, error: error.message }; }
+    setRequerimientos((prev) => prev.map((r) => (r.id === id ? actualizado : r)));
+    return { ok: true };
+  }
+
   async function guardarACM(captacionId, datos) {
     const { error } = await supabase.from("realtia_captaciones").update({ acm: datos }).eq("id", captacionId);
     if (error) { console.error("guardarACM", error); return; }
@@ -290,7 +336,9 @@ export function AppDataProvider({ children }) {
     else if (key === "oportunidades") setCrearOportunidadAbierto(true);
     else if (key === "captacion") setCrearCaptacionAbierto(true);
     else if (key === "agenda") setCrearActividadAbierto(true);
+    else if (key === "requerimientos") setCrearRequerimientoAbierto(true);
     else if (key === "contactos-todos") setVista("contactos");
+    else if (key === "propiedades-ver") setVista("propiedades");
     else if (key === "llamar" || key === "whatsapp" || key === "email") setContactarTipo(key);
   }
 
@@ -344,17 +392,19 @@ export function AppDataProvider({ children }) {
   const value = {
     vista, setVista,
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil, actualizarMeta,
-    contactos, oportunidades, actividades, captaciones,
-    equipo, oficinaCartera,
-    contactoNombre, registrarContacto, agregarNota,
+    contactos, oportunidades, actividades, captaciones, requerimientos,
+    equipo, oficinaCartera, directorioOficina, propiedadesOficina,
+    contactoNombre, nombreAgente, registrarContacto, agregarNota,
     crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad,
     crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, guardarACM, guardarDescripcionIA,
+    crearRequerimiento, actualizarRequerimiento,
     crearActividad, completarActividad, reprogramarActividad, cancelarActividad,
     cargarDatosDemo,
     crearContactoAbierto, setCrearContactoAbierto,
     crearOportunidadAbierto, setCrearOportunidadAbierto,
     crearCaptacionAbierto, setCrearCaptacionAbierto,
     crearActividadAbierto, setCrearActividadAbierto,
+    crearRequerimientoAbierto, setCrearRequerimientoAbierto,
     contactarTipo, setContactarTipo,
     expedienteId, abrirExpediente, cerrarExpediente,
     manejarAccionRapida,

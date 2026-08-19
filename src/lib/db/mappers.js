@@ -103,6 +103,7 @@ export function actividadToRow(a) {
 export function captacionFromRow(row) {
   return {
     id: row.id,
+    agenteId: row.agente_id,
     contactoId: row.contacto_id,
     tipoInmueble: row.tipo_inmueble,
     operacion: row.operacion,
@@ -147,6 +148,33 @@ export function captacionToRow(c) {
     diagnostico: c.diagnostico ?? [],
     espacios: c.espacios ?? [],
     acm: c.acm ?? null,
+  };
+}
+
+export function requerimientoFromRow(row) {
+  return {
+    id: row.id,
+    contactoId: row.contacto_id,
+    tipoInmueble: row.tipo_inmueble,
+    operacion: row.operacion,
+    zona: row.zona,
+    precioMin: row.precio_min,
+    precioMax: row.precio_max,
+    notas: row.notas,
+    estado: row.estado,
+    creadoEn: row.created_at,
+  };
+}
+export function requerimientoToRow(r) {
+  return {
+    contacto_id: r.contactoId ?? null,
+    tipo_inmueble: r.tipoInmueble ?? null,
+    operacion: r.operacion ?? "venta",
+    zona: r.zona ?? null,
+    precio_min: r.precioMin ?? null,
+    precio_max: r.precioMax ?? null,
+    notas: r.notas ?? null,
+    estado: r.estado ?? "activo",
   };
 }
 

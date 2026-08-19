@@ -1,4 +1,4 @@
-import { NAV } from "../config/nav.js";
+import { NAV_MOVIL } from "../config/nav.js";
 import { useAppData } from "../context/AppDataContext.jsx";
 
 // Shell de teléfono: barra inferior de pestañas grandes, estilo app nativa.
@@ -12,7 +12,7 @@ export function MobileShell({ children }) {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-ink-950/95 backdrop-blur pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.4)]">
         <div className="grid grid-cols-5">
-          {NAV.map((item) => {
+          {NAV_MOVIL.map((item) => {
             const activo = vista === item.key;
             return (
               <button
