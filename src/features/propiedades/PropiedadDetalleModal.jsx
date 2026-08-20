@@ -1,5 +1,5 @@
 import { Modal, Badge } from "../../components/ui/index.js";
-import { TIPO_INMUEBLE_LABEL, OPERACION_INMUEBLE_LABEL } from "../../constants/captacion.js";
+import { TIPO_INMUEBLE_LABEL, OPERACION_INMUEBLE_LABEL, DISPONIBILIDAD_LABEL, DISPONIBILIDAD_TONE } from "../../constants/captacion.js";
 import { formatMoney } from "../../lib/format.js";
 
 // Vista de solo lectura de una propiedad publicada — usada tanto para la propia cartera
@@ -16,7 +16,8 @@ export function PropiedadDetalleModal({ propiedad, asesorNombre, onClose }) {
     <Modal open onClose={onClose} title={`${TIPO_INMUEBLE_LABEL[p.tipoInmueble]} · ${OPERACION_INMUEBLE_LABEL[p.operacion]}`}>
       <div className="flex flex-col gap-5">
         <div>
-          <p className="text-sm font-semibold text-gray-900">{p.direccion}</p>
+          <Badge className={DISPONIBILIDAD_TONE[p.disponibilidad]}>{DISPONIBILIDAD_LABEL[p.disponibilidad]}</Badge>
+          <p className="mt-1.5 text-sm font-semibold text-gray-900">{p.direccion}</p>
           <p className="text-xs text-black/45">{p.zona}</p>
         </div>
 

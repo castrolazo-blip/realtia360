@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Modal, Field, Badge, OpcionesBotones } from "../../components/ui/index.js";
-import { TIPO_INMUEBLE_LABEL, OPERACION_INMUEBLE_LABEL, ESTADOS_CAPTACION, ESTADO_CAPTACION_LABEL } from "../../constants/captacion.js";
+import { TIPO_INMUEBLE_LABEL, OPERACION_INMUEBLE_LABEL, ESTADOS_CAPTACION, ESTADO_CAPTACION_LABEL, DISPONIBILIDADES, DISPONIBILIDAD_LABEL } from "../../constants/captacion.js";
 import { formatMoney } from "../../lib/format.js";
 import { FichaPropiedad } from "./FichaPropiedad.jsx";
 import { AnalisisMercado } from "./AnalisisMercado.jsx";
 import { EditarCaptacionModal } from "./EditarCaptacionModal.jsx";
 
-export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNombre, onClose, onToggleChecklist, onCambiarEstado, onAbrirContacto, onGuardarACM, onGuardarDescripcionIA, onGuardarEdicion }) {
+export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNombre, onClose, onToggleChecklist, onCambiarEstado, onCambiarDisponibilidad, onAbrirContacto, onGuardarACM, onGuardarDescripcionIA, onGuardarEdicion }) {
   const [error, setError] = useState("");
   const [fichaAbierta, setFichaAbierta] = useState(false);
   const [acmAbierto, setAcmAbierto] = useState(false);
@@ -80,6 +80,17 @@ export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNomb
           />
         </Field>
         {error && <p className="text-sm text-orange-700">⚠️ {error}</p>}
+
+        {c.estado === "publicada" && (
+          <Field label="Disponibilidad">
+            <OpcionesBotones
+              columnas={2}
+              opciones={DISPONIBILIDADES.map((d) => ({ value: d, label: DISPONIBILIDAD_LABEL[d] }))}
+              valor={c.disponibilidad}
+              onChange={(v) => onCambiarDisponibilidad(c.id, v)}
+            />
+          </Field>
+        )}
 
         <div>
           <div className="mb-2 flex items-center justify-between">

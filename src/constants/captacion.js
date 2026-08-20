@@ -33,4 +33,22 @@ export const CHECKLIST_BASE = [
   "DUI del propietario",
   "Solvencia municipal",
 ];
-export const nuevoChecklist = () => CHECKLIST_BASE.map((nombre, i) => ({ id: `chk${i}`, nombre, completado: false }));
+export const nuevoChecklist = (completado = false) => CHECKLIST_BASE.map((nombre, i) => ({ id: `chk${i}`, nombre, completado }));
+
+// Disponibilidad de una propiedad ya publicada — espejo de las carpetas "Venta / Alquiler /
+// Propiedades Reservadas / Propiedades Cerradas / Propiedades No Disponibles" que ya usa la
+// oficina en Drive. Es independiente del pipeline de captación (ESTADO_CAPTACION): una
+// propiedad publicada sigue en el inventario aunque ya esté cerrada o retirada.
+export const DISPONIBILIDAD_LABEL = {
+  disponible: "Disponible",
+  reservada: "Reservada",
+  cerrada: "Cerrada",
+  no_disponible: "No disponible",
+};
+export const DISPONIBILIDADES = Object.keys(DISPONIBILIDAD_LABEL);
+export const DISPONIBILIDAD_TONE = {
+  disponible: "bg-brand-100 text-brand-700",
+  reservada: "bg-gold-100 text-gold-700",
+  cerrada: "bg-black/10 text-black/50",
+  no_disponible: "bg-rose-100 text-rose-700",
+};

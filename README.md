@@ -198,6 +198,26 @@ los excluye a propósito, siguiendo el principio de no saturar la navegación t�
 llega a ellos desde los accesos rápidos de Inicio ("Ver propiedades" / "Nuevo
 requerimiento").
 
+### Disponibilidad y carga rápida
+
+Cada propiedad publicada tiene una **disponibilidad** (`disponible` / `reservada` /
+`cerrada` / `no_disponible`), independiente del pipeline de captación — espeja la
+estructura real que ya usa la oficina en Google Drive (una carpeta por asesor, y dentro de
+cada una: Venta, Alquiler, Propiedades Reservadas, Propiedades Cerradas, Propiedades No
+Disponibles, Requerimientos). Una propiedad "cerrada" o "no disponible" sigue en el
+inventario como registro histórico, no desaparece.
+
+Para las propiedades que ya existen de verdad (documentadas fuera de Realtia, en esas
+carpetas de Drive), **Captación → "Cargar existente"** (`CargaRapidaModal.jsx`) las registra
+directo como publicadas, con el checklist ya marcado completo, sin pasar por el wizard
+guiado (Método DEC, espacios, ACM). Cada asesor carga las suyas — no hay una vía para que
+el Broker cargue a nombre de otro agente todavía (el RLS solo permite `agente_id =
+auth.uid()` al insertar).
+
+**Pendiente, no incluido en este corte:** la sincronización real con Google Drive (subir/ver
+archivos desde Realtia en vez de solo replicar la categoría) — hoy solo se adoptó la misma
+taxonomía como dato en la base, no hay integración con la API de Drive todavía.
+
 ## Comercialización por planes
 
 `src/config/plans.js` define Basic / Gold / Premium (con límites de referencia) y

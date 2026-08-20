@@ -252,6 +252,34 @@ export function AppDataProvider({ children }) {
     return { ok: true };
   }
 
+  async function cambiarDisponibilidad(captacionId, disponibilidad) {
+    const { error } = await supabase.from("realtia_captaciones").update({ disponibilidad }).eq("id", captacionId);
+    if (error) return { ok: false, error: error.message };
+    setCaptaciones((prev) => prev.map((c) => (c.id === captacionId ? { ...c, disponibilidad } : c)));
+    return { ok: true };
+  }
+
+  // Carga rápida: para propiedades que ya existen de verdad (documentadas en Drive, fuera
+  // de Realtia) y no necesitan pasar por el wizard guiado de captación. Se crean
+  // directamente como publicadas, con el checklist ya completo.
+  async function crearPropiedadExistente(data) {
+    const { data: row, error } = await supabase
+      .from("realtia_captaciones")
+      .insert({
+        agente_id: agenteId,
+        ...captacionToRow({
+          estado: "publicada",
+          disponibilidad: "disponible",
+          checklist: nuevoChecklist(true),
+          ...data,
+        }),
+      })
+      .select().single();
+    if (error) { console.error("crearPropiedadExistente", error); return { ok: false, error: error.message }; }
+    setCaptaciones((prev) => [captacionFromRow(row), ...prev]);
+    return { ok: true };
+  }
+
   async function crearRequerimiento(data) {
     const { data: row, error } = await supabase
       .from("realtia_requerimientos")
@@ -396,7 +424,7 @@ export function AppDataProvider({ children }) {
     equipo, oficinaCartera, directorioOficina, propiedadesOficina,
     contactoNombre, nombreAgente, registrarContacto, agregarNota,
     crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad,
-    crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, guardarACM, guardarDescripcionIA,
+    crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, cambiarDisponibilidad, crearPropiedadExistente, guardarACM, guardarDescripcionIA,
     crearRequerimiento, actualizarRequerimiento,
     crearActividad, completarActividad, reprogramarActividad, cancelarActividad,
     cargarDatosDemo,
