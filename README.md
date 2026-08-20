@@ -53,6 +53,10 @@ src/
     auth/LoginScreen.jsx     pantalla de inicio de sesión / registro
     inicio/                 pantalla de inicio del asesor (feed en móvil, dashboard en escritorio)
     oficina/                Office Pulse — pantalla de inicio del broker (equipo de la oficina)
+    agentes/                roster de la oficina + dashboard individual por asesor
+    produccion/              cierres del mes y de los últimos 6 meses de la oficina
+    proyecciones/            proyección de la oficina (Realtia Coach a nivel oficina)
+    administracion/          perfil de la oficina + listado de agentes
     contactos/               CRM + Círculo de Influencia
     oportunidades/           embudo de ventas
     captacion/                captación guiada (Método DEC), ACM, ficha imprimible, kanban
@@ -151,21 +155,46 @@ tabla (`realtia_contactos`, `realtia_oportunidades`, `realtia_captaciones`,
 oficina cuando quien consulta tiene `rol = 'broker'`, apoyada en dos funciones
 `security definer` (`realtia_mi_oficina_id()`, `realtia_soy_broker()`) que evitan que la
 política se consulte a sí misma de forma recursiva. Ver
-`supabase/migrations/20260819173000_office_layer.sql`.
+`supabase/migrations/20260819180000_realtia_schema.sql`.
 
 En el frontend, `AppDataContext` carga esa cartera de oficina (`equipo`,
-`oficinaCartera`) únicamente cuando el perfil es de un broker, y el inicio de la app
-(`App.jsx`) muestra **Office Pulse** (`features/oficina/OfficePulse.jsx`) en vez de la
-pantalla de inicio de un asesor: indicadores de toda la oficina (contactos, oportunidades
-activas, captaciones publicadas, cierres, producción cerrada) y una tabla por asesor. Un
-asesor sigue viendo únicamente su propio Inicio — Contactos, Oportunidades, Captación y
-Agenda siguen siendo su cartera personal en ambos roles.
+`oficinaCartera`) únicamente cuando el perfil es de un broker.
 
-**Pendiente de esta capa:** vista de detalle por asesor (drill-down), un flujo real de
-invitación a la oficina (hoy depende de escribir el mismo nombre), y los módulos de
-Propiedades/Requerimientos/Expedientes como inventario compartido de oficina (todavía la
-"cartera" es la de Realtia — contactos, oportunidades y captaciones por agente — no un
-inventario único de propiedades de toda la oficina).
+### Navegación distinta por rol
+
+Un Broker no ve el menú de un asesor — vería su propia cartera personal, no cómo está la
+oficina. `config/nav.js` define dos navegaciones separadas (`NAV_ASESOR` / `NAV_BROKER`),
+y `DesktopShell`/`MobileShell` eligen una u otra según `agency.rol`:
+
+- **Asesor**: Inicio, Contactos, Oportunidades, Captación, Propiedades, Requerimientos,
+  Agenda — su cartera personal.
+- **Broker**: Inicio (Office Pulse), Agentes, Producción, Proyecciones, Propiedades,
+  Administración — la oficina completa. Ninguno de estos módulos deja escribir en la
+  cartera de un agente, solo leerla (el mismo RLS de arriba).
+
+Los cuatro módulos del Broker se alimentan de los mismos datos que ya cargan los asesores
+(`oficinaCartera`, agregada en `features/agentes/resumenOficina.js` para no repetir la
+cuenta en cada pantalla):
+
+- **`features/oficina/OfficePulse.jsx`** — inicio del Broker: indicadores de oficina
+  (contactos, oportunidades activas, captaciones publicadas, cierres, producción) y una
+  tabla resumen por asesor.
+- **`features/agentes/Agentes.jsx`** — roster de la oficina; cada tarjeta abre
+  `AgenteDetalleModal.jsx`, el "dashboard individual del asesor" del plano original:
+  pipeline por etapa, captaciones por estado y próximas actividades de esa persona,
+  reconstruido a partir de `oficinaCartera` filtrada a su `agente_id`.
+- **`features/produccion/Produccion.jsx`** — cierres del mes y de los últimos 6 meses de
+  toda la oficina (oportunidades en estado `ganada`).
+- **`features/proyecciones/Proyecciones.jsx`** — reutiliza el motor de "Realtia Coach"
+  (`features/inicio/negocio.js`) pero corrido sobre el embudo de **toda la oficina**; la
+  meta base es la que el Broker configura en su propio perfil (pensada acá como meta de
+  oficina, no personal).
+- **`features/administracion/Administracion.jsx`** — nombre/ubicación de la oficina y el
+  listado de quién pertenece a ella.
+
+**Pendiente de esta capa:** un flujo real de invitación a la oficina (hoy depende de que el
+asesor escriba el mismo nombre exacto al registrarse — `Administracion.jsx` ya lo señala
+como pendiente en su propia pantalla).
 
 ## Propiedades y Requerimientos
 

@@ -16,6 +16,10 @@ import { CrearActividadModal } from "./features/agenda/CrearActividadModal.jsx";
 import { Propiedades } from "./features/propiedades/Propiedades.jsx";
 import { Requerimientos } from "./features/requerimientos/Requerimientos.jsx";
 import { CrearRequerimientoModal } from "./features/requerimientos/CrearRequerimientoModal.jsx";
+import { Agentes } from "./features/agentes/Agentes.jsx";
+import { Produccion } from "./features/produccion/Produccion.jsx";
+import { Proyecciones } from "./features/proyecciones/Proyecciones.jsx";
+import { Administracion } from "./features/administracion/Administracion.jsx";
 import { ContactarModal } from "./components/shared/ContactarModal.jsx";
 
 const VISTAS = {
@@ -25,6 +29,12 @@ const VISTAS = {
   propiedades: Propiedades,
   requerimientos: Requerimientos,
   agenda: Agenda,
+  // Solo alcanzables desde el nav del Broker (NAV_BROKER) — un asesor nunca ve estos
+  // botones, así que en la práctica nunca navega acá.
+  agentes: Agentes,
+  produccion: Produccion,
+  proyecciones: Proyecciones,
+  administracion: Administracion,
 };
 
 // El inicio del Broker es Office Pulse (su equipo), no su propia cartera individual —

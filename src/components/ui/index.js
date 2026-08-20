@@ -1,4 +1,5 @@
 export { Card } from "./Card.jsx";
+export { StatTile } from "./StatTile.jsx";
 export { Badge } from "./Badge.jsx";
 export { Button } from "./Button.jsx";
 export { Field, inputClass } from "./Field.jsx";

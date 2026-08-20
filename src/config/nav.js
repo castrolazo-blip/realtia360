@@ -1,6 +1,7 @@
 import { Icon } from "../components/icons/Icon.jsx";
 
-export const NAV = [
+// Navegación de un asesor: su cartera personal de trabajo diario.
+export const NAV_ASESOR = [
   { key: "inicio", label: "Inicio", icon: Icon.Home },
   { key: "contactos", label: "Contactos", icon: Icon.Users },
   { key: "oportunidades", label: "Oportunidades", icon: Icon.Target },
@@ -8,6 +9,20 @@ export const NAV = [
   { key: "propiedades", label: "Propiedades", icon: Icon.Building },
   { key: "requerimientos", label: "Requerimientos", icon: Icon.ListSearch },
   { key: "agenda", label: "Agenda", icon: Icon.Calendar },
+];
+// Alias retrocompatible — la mayoría del código histórico importa NAV a secas.
+export const NAV = NAV_ASESOR;
+
+// Navegación del Broker: administrativa, no la cartera de un asesor. Ve la oficina
+// completa (Office Pulse como inicio, equipo, producción, proyecciones, inventario) en vez
+// de Contactos/Oportunidades/Captación/Agenda personales.
+export const NAV_BROKER = [
+  { key: "inicio", label: "Inicio", icon: Icon.Home },
+  { key: "agentes", label: "Agentes", icon: Icon.Users },
+  { key: "produccion", label: "Producción", icon: Icon.Crown },
+  { key: "proyecciones", label: "Proyecciones", icon: Icon.TrendUp },
+  { key: "propiedades", label: "Propiedades", icon: Icon.Building },
+  { key: "administracion", label: "Administración", icon: Icon.Shield },
 ];
 
 export const ACCIONES_RAPIDAS = [
@@ -23,6 +38,9 @@ export const ACCIONES_RAPIDAS = [
   { key: "contactos-todos", label: "Ver\ncontactos", icon: Icon.Search, accent: "bg-gray-100 text-gray-600" },
 ];
 
-// El móvil no muestra los 7 módulos en la barra inferior (ver README) — Propiedades y
-// Requerimientos siguen a un toque de distancia desde los accesos rápidos de Inicio.
-export const NAV_MOVIL = NAV.filter((item) => item.key !== "propiedades" && item.key !== "requerimientos");
+// El móvil no muestra los 7 módulos del asesor en la barra inferior (ver README) —
+// Propiedades y Requerimientos siguen a un toque de distancia desde los accesos rápidos de
+// Inicio. El Broker tiene solo 6 módulos en total, así que sí caben todos.
+export const NAV_MOVIL_ASESOR = NAV_ASESOR.filter((item) => item.key !== "propiedades" && item.key !== "requerimientos");
+export const NAV_MOVIL = NAV_MOVIL_ASESOR;
+export const NAV_MOVIL_BROKER = NAV_BROKER;

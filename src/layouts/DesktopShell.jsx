@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NAV } from "../config/nav.js";
+import { NAV_ASESOR, NAV_BROKER } from "../config/nav.js";
 import { useAppData } from "../context/AppDataContext.jsx";
 import { PlanBadge } from "../components/ui/PlanBadge.jsx";
 import { Icon } from "../components/icons/Icon.jsx";
@@ -11,6 +11,8 @@ import { PerfilModal } from "../components/shared/PerfilModal.jsx";
 export function DesktopShell({ children }) {
   const { vista, setVista, agency } = useAppData();
   const [perfilAbierto, setPerfilAbierto] = useState(false);
+  const esBroker = agency.rol === "broker";
+  const nav = esBroker ? NAV_BROKER : NAV_ASESOR;
 
   return (
     <div className="min-h-screen bg-gray-50 pl-72">
@@ -21,12 +23,12 @@ export function DesktopShell({ children }) {
           </div>
           <div>
             <p className="font-display text-lg font-semibold leading-tight text-white">{agency.producto}</p>
-            <p className="text-[11px] uppercase tracking-wider text-white/40">Panel del agente</p>
+            <p className="text-[11px] uppercase tracking-wider text-white/40">{esBroker ? "Panel del broker" : "Panel del agente"}</p>
           </div>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1.5">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const activo = vista === item.key;
             return (
               <button

@@ -112,7 +112,7 @@ export function AppDataProvider({ children }) {
           supabase.from("realtia_contactos").select("id, agente_id, clasificacion, ultimo_contacto, created_at"),
           supabase.from("realtia_oportunidades").select("id, agente_id, etapa, estado, valor, created_at, cerrada_en"),
           supabase.from("realtia_captaciones").select("id, agente_id, estado, precio, comision_pct, created_at"),
-          supabase.from("realtia_actividades").select("id, agente_id, estado, fecha_hora"),
+          supabase.from("realtia_actividades").select("id, agente_id, tipo, titulo, estado, fecha_hora"),
         ]);
         setEquipo(equipoRes.data || []);
         setOficinaCartera({

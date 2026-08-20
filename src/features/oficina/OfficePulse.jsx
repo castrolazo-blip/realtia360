@@ -1,81 +1,20 @@
 import { useMemo } from "react";
 import { useAppData } from "../../context/AppDataContext.jsx";
-import { Card, EmptyState, SectionHeader } from "../../components/ui/index.js";
+import { Card, EmptyState, SectionHeader, StatTile } from "../../components/ui/index.js";
 import { Icon } from "../../components/icons/Icon.jsx";
 import { formatMoney } from "../../lib/format.js";
+import { calcularResumenPorAgente, calcularTotalesOficina } from "../agentes/resumenOficina.js";
 
 // Vista de inicio del Broker: en vez de su propia cartera, ve cómo está el equipo. Los
 // datos vienen de `oficinaCartera` (AppDataContext), que el RLS de Supabase solo llena
 // para un perfil con rol 'broker' — este componente no filtra nada por seguridad, ya lo
-// hizo la base de datos; aquí solo se agrupa y se muestra.
+// hizo la base de datos; aquí solo se agrupa y se muestra. El detalle por asesor vive en
+// Agentes — acá solo el resumen ejecutivo.
 export function OfficePulse() {
-  const { agency, equipo, oficinaCartera } = useAppData();
-  const { contactos, oportunidades, captaciones, actividades } = oficinaCartera;
+  const { agency, equipo, oficinaCartera, setVista } = useAppData();
 
-  const porAgente = useMemo(() => {
-    const ahora = new Date();
-    const mapa = new Map(
-      equipo.map((p) => [
-        p.id,
-        {
-          id: p.id,
-          nombre: p.nombre_agente,
-          esBroker: p.rol === "broker",
-          contactos: 0,
-          oportunidadesActivas: 0,
-          cierres: 0,
-          valorCerrado: 0,
-          captaciones: 0,
-          captacionesPublicadas: 0,
-          actividadesPendientes: 0,
-          actividadesVencidas: 0,
-        },
-      ])
-    );
-
-    for (const c of contactos) {
-      const f = mapa.get(c.agente_id);
-      if (f) f.contactos++;
-    }
-    for (const o of oportunidades) {
-      const f = mapa.get(o.agente_id);
-      if (!f) continue;
-      if (o.estado === "activa") f.oportunidadesActivas++;
-      if (o.estado === "ganada") { f.cierres++; f.valorCerrado += Number(o.valor || 0); }
-    }
-    for (const c of captaciones) {
-      const f = mapa.get(c.agente_id);
-      if (!f) continue;
-      f.captaciones++;
-      if (c.estado === "publicada") f.captacionesPublicadas++;
-    }
-    for (const a of actividades) {
-      const f = mapa.get(a.agente_id);
-      if (!f || a.estado !== "pendiente") continue;
-      f.actividadesPendientes++;
-      if (new Date(a.fecha_hora) < ahora) f.actividadesVencidas++;
-    }
-
-    return [...mapa.values()].sort((a, b) => b.valorCerrado - a.valorCerrado || b.contactos - a.contactos);
-  }, [equipo, contactos, oportunidades, captaciones, actividades]);
-
-  const totales = useMemo(
-    () =>
-      porAgente.reduce(
-        (t, a) => ({
-          contactos: t.contactos + a.contactos,
-          oportunidadesActivas: t.oportunidadesActivas + a.oportunidadesActivas,
-          cierres: t.cierres + a.cierres,
-          valorCerrado: t.valorCerrado + a.valorCerrado,
-          captaciones: t.captaciones + a.captaciones,
-          captacionesPublicadas: t.captacionesPublicadas + a.captacionesPublicadas,
-          actividadesPendientes: t.actividadesPendientes + a.actividadesPendientes,
-          actividadesVencidas: t.actividadesVencidas + a.actividadesVencidas,
-        }),
-        { contactos: 0, oportunidadesActivas: 0, cierres: 0, valorCerrado: 0, captaciones: 0, captacionesPublicadas: 0, actividadesPendientes: 0, actividadesVencidas: 0 }
-      ),
-    [porAgente]
-  );
+  const porAgente = useMemo(() => calcularResumenPorAgente(equipo, oficinaCartera), [equipo, oficinaCartera]);
+  const totales = useMemo(() => calcularTotalesOficina(porAgente), [porAgente]);
 
   return (
     <div className="px-4 py-5 lg:px-0 lg:py-0">
@@ -99,7 +38,12 @@ export function OfficePulse() {
         )}
       </div>
 
-      <h2 className="mb-3 font-display text-base font-semibold text-ink-950">Equipo</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-display text-base font-semibold text-ink-950">Equipo</h2>
+        {porAgente.length > 0 && (
+          <button onClick={() => setVista("agentes")} className="text-xs font-semibold text-brand-700">Ver detalle por agente →</button>
+        )}
+      </div>
       {porAgente.length === 0 ? (
         <EmptyState title="Todavía no hay asesores en tu oficina" hint="En cuanto alguien se registre con el mismo nombre de oficina, aparecerá aquí." />
       ) : (
@@ -139,17 +83,5 @@ export function OfficePulse() {
         </div>
       )}
     </div>
-  );
-}
-
-function StatTile({ label, valor, icono: IconComp, destacado }) {
-  return (
-    <Card className={`p-5 ${destacado ? "border-gold-300 bg-gold-50/40" : ""}`}>
-      <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${destacado ? "bg-gold-500 text-ink-950" : "bg-brand-50 text-brand-700"}`}>
-        <IconComp className="h-4 w-4" />
-      </span>
-      <p className="mt-3 font-display text-3xl font-semibold text-ink-950">{valor}</p>
-      <p className="mt-0.5 text-xs font-medium text-black/45">{label}</p>
-    </Card>
   );
 }

@@ -27,6 +27,12 @@ export const Icon = {
       <path strokeLinecap="round" d="M15 20v-6.5h5V20M7.5 7.5h1.5M11 7.5h1.5M7.5 11h1.5M11 11h1.5M7.5 14.5h1.5M11 14.5h1.5" />
     </svg>
   ),
+  TrendUp: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 16.5 9 11l4 3.5 7.5-8" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 6h6v6" />
+    </svg>
+  ),
   ListSearch: (p) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
       <path strokeLinecap="round" d="M4 6h9M4 11h6" />
