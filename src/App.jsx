@@ -20,6 +20,8 @@ import { Agentes } from "./features/agentes/Agentes.jsx";
 import { Produccion } from "./features/produccion/Produccion.jsx";
 import { Proyecciones } from "./features/proyecciones/Proyecciones.jsx";
 import { Administracion } from "./features/administracion/Administracion.jsx";
+import { Kyc } from "./features/kyc/Kyc.jsx";
+import { CrearKycModal } from "./features/kyc/CrearKycModal.jsx";
 import { ContactarModal } from "./components/shared/ContactarModal.jsx";
 
 const VISTAS = {
@@ -28,6 +30,7 @@ const VISTAS = {
   captacion: Captacion,
   propiedades: Propiedades,
   requerimientos: Requerimientos,
+  kyc: Kyc,
   agenda: Agenda,
   // Solo alcanzables desde el nav del Broker (NAV_BROKER) — un asesor nunca ve estos
   // botones, así que en la práctica nunca navega acá.
@@ -64,6 +67,7 @@ function GlobalModals() {
     crearCaptacion, crearCaptacionAbierto, setCrearCaptacionAbierto,
     crearActividad, crearActividadAbierto, setCrearActividadAbierto,
     crearRequerimiento, crearRequerimientoAbierto, setCrearRequerimientoAbierto,
+    crearKyc, crearKycAbierto, setCrearKycAbierto,
     contactarTipo, setContactarTipo,
   } = useAppData();
 
@@ -74,6 +78,7 @@ function GlobalModals() {
       <CaptacionGuiada open={crearCaptacionAbierto} onClose={() => setCrearCaptacionAbierto(false)} contactos={contactos} onCrear={(d) => { crearCaptacion(d); setCrearCaptacionAbierto(false); }} />
       <CrearActividadModal open={crearActividadAbierto} onClose={() => setCrearActividadAbierto(false)} contactos={contactos} onCrear={(d) => { crearActividad(d); setCrearActividadAbierto(false); }} />
       <CrearRequerimientoModal open={crearRequerimientoAbierto} onClose={() => setCrearRequerimientoAbierto(false)} contactos={contactos} onCrear={(d) => { crearRequerimiento(d); setCrearRequerimientoAbierto(false); }} />
+      <CrearKycModal open={crearKycAbierto} onClose={() => setCrearKycAbierto(false)} contactos={contactos} onCrear={crearKyc} />
       <ContactarModal tipo={contactarTipo} onClose={() => setContactarTipo(null)} contactos={contactos} onRegistrar={registrarContacto} />
       <DetalleContactoModal />
     </>

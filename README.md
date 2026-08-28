@@ -62,6 +62,7 @@ src/
     captacion/                captación guiada (Método DEC), ACM, ficha imprimible, kanban
     propiedades/             inventario publicado de toda la oficina (solo lectura)
     requerimientos/           lo que busca un comprador + matching contra el inventario
+    kyc/                      cumplimiento — identificación, riesgo por reglas, listas OFAC
     agenda/                   lista + calendario de actividades
 ```
 
@@ -246,6 +247,33 @@ auth.uid()` al insertar).
 **Pendiente, no incluido en este corte:** la sincronización real con Google Drive (subir/ver
 archivos desde Realtia en vez de solo replicar la categoría) — hoy solo se adoptó la misma
 taxonomía como dato en la base, no hay integración con la API de Drive todavía.
+
+## Cumplimiento (KYC/AML)
+
+Expediente de verificación de identidad y riesgo por contacto (`features/kyc`,
+`realtia_kyc`), privado del agente que lo hace, con lectura para el Broker como el resto
+de la cartera de oficina:
+
+- **Formulario de identificación**: documento, ocupación, origen de fondos, forma de pago,
+  monto de la transacción, y dos casillas de criterio (PEP, país de alto riesgo).
+- **Motor de riesgo por reglas** (`features/kyc/riesgo.js`): sin IA ni caja negra — cada
+  factor (efectivo, monto alto, PEP, país de riesgo, fondos no declarados, coincidencia en
+  listas) suma puntos explícitos hacia un puntaje 0–100 y un nivel bajo/medio/alto. El
+  mismo cálculo se usa al guardar y al mostrar el detalle, así que nunca se desincroniza.
+- **Verificación en listas de sanciones** (`supabase/functions/verificar-listas`): compara
+  el nombre contra la lista pública OFAC SDN (Departamento del Tesoro de EE. UU., gratuita,
+  sin API key) por similitud de palabras — no es una fuente de pago tipo Refinitiv/LexisNexis,
+  pero es un primer filtro real con datos reales. Ninguna coincidencia se autorrechaza: solo
+  queda marcada para que una persona la revise. **No verificado desde este entorno** que la
+  URL de descarga (`treasury.gov/ofac/downloads/sdn.csv`) siga vigente — la salida bloquea
+  ese dominio acá; probá el botón "Verificar ahora" y avisame si da error para ajustar la URL.
+
+**Pendiente, no incluido en este corte:** subir el informe de Equifax (u otro buró) y que la
+IA lo analice — necesita primero un bucket de Supabase Storage para los archivos (no existe
+todavía, ningún módulo sube archivos aún) y una función nueva similar a
+`generar-descripcion` pero con lectura de PDF. Evaluación de riesgo por oficina completa
+(hoy Office Pulse solo alerta cuántos expedientes de riesgo alto quedan pendientes, no hay
+un dashboard de cumplimiento dedicado para el Broker).
 
 ## Comercialización por planes
 

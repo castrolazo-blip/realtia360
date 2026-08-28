@@ -9,8 +9,10 @@ import {
   actividadFromRow, actividadToRow,
   captacionFromRow, captacionToRow,
   requerimientoFromRow, requerimientoToRow,
+  kycFromRow, kycToRow,
   perfilFromRow,
 } from "../lib/db/mappers.js";
+import { calcularRiesgo } from "../features/kyc/riesgo.js";
 import { CONTACTOS_INICIALES, OPORTUNIDADES_INICIALES, ACTIVIDADES_INICIALES, CAPTACIONES_INICIALES } from "../data/seed.js";
 
 const AppDataContext = createContext(null);
@@ -29,6 +31,7 @@ export function AppDataProvider({ children }) {
   const [actividades, setActividades] = useState([]);
   const [captaciones, setCaptaciones] = useState([]);
   const [requerimientos, setRequerimientos] = useState([]);
+  const [kyc, setKyc] = useState([]);
   const [perfil, setPerfil] = useState(null);
 
   // Directorio (id + nombre + rol de los compañeros de oficina) y propiedades publicadas
@@ -43,13 +46,14 @@ export function AppDataProvider({ children }) {
   // de toda la oficina, de solo lectura (el RLS de la base de datos es quien realmente
   // impide que un asesor vea esto — este estado solo existe si el perfil es broker).
   const [equipo, setEquipo] = useState([]);
-  const [oficinaCartera, setOficinaCartera] = useState({ contactos: [], oportunidades: [], captaciones: [], actividades: [] });
+  const [oficinaCartera, setOficinaCartera] = useState({ contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [] });
 
   const [crearContactoAbierto, setCrearContactoAbierto] = useState(false);
   const [crearOportunidadAbierto, setCrearOportunidadAbierto] = useState(false);
   const [crearCaptacionAbierto, setCrearCaptacionAbierto] = useState(false);
   const [crearActividadAbierto, setCrearActividadAbierto] = useState(false);
   const [crearRequerimientoAbierto, setCrearRequerimientoAbierto] = useState(false);
+  const [crearKycAbierto, setCrearKycAbierto] = useState(false);
   const [contactarTipo, setContactarTipo] = useState(null); // 'llamar' | 'whatsapp' | 'email'
   const [expedienteId, setExpedienteId] = useState(null); // contacto cuyo expediente está abierto
 
@@ -58,13 +62,14 @@ export function AppDataProvider({ children }) {
     setCargando(true);
     setErrorCarga("");
     try {
-      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes, requerimientosRes] = await Promise.all([
+      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes, requerimientosRes, kycRes] = await Promise.all([
         supabase.from("realtia_perfiles").select("*").eq("id", agenteId).maybeSingle(),
         supabase.from("realtia_contactos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_oportunidades").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_actividades").select("*").eq("agente_id", agenteId).order("fecha_hora", { ascending: false }),
         supabase.from("realtia_captaciones").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_requerimientos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
+        supabase.from("realtia_kyc").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
       ]);
       // Red de seguridad: si por alguna razón el trigger de la base de datos no creó el
       // perfil al registrarse, lo creamos aquí mismo con lo que haya en los metadatos de auth.
@@ -88,6 +93,7 @@ export function AppDataProvider({ children }) {
       setActividades((actividadesRes.data || []).map(actividadFromRow));
       setCaptaciones((captacionesRes.data || []).map(captacionFromRow));
       setRequerimientos((requerimientosRes.data || []).map(requerimientoFromRow));
+      setKyc((kycRes.data || []).map(kycFromRow));
 
       // Propiedades: inventario publicado de toda la oficina, y el directorio (id/nombre)
       // de los compañeros para poder mostrar quién es el asesor responsable. Esto es para
@@ -107,12 +113,13 @@ export function AppDataProvider({ children }) {
       // Office Pulse: si el perfil es de un Broker, trae además el equipo y la cartera de
       // toda la oficina (el RLS deja pasar estas filas solo porque el perfil es broker).
       if (perfilMapeado?.rol === "broker" && perfilMapeado.oficinaId) {
-        const [equipoRes, contactosOfRes, oportunidadesOfRes, captacionesOfRes, actividadesOfRes] = await Promise.all([
+        const [equipoRes, contactosOfRes, oportunidadesOfRes, captacionesOfRes, actividadesOfRes, kycOfRes] = await Promise.all([
           supabase.from("realtia_perfiles").select("id, nombre_agente, rol"),
           supabase.from("realtia_contactos").select("id, agente_id, clasificacion, ultimo_contacto, created_at"),
           supabase.from("realtia_oportunidades").select("id, agente_id, etapa, estado, valor, created_at, cerrada_en"),
           supabase.from("realtia_captaciones").select("id, agente_id, estado, precio, comision_pct, created_at"),
           supabase.from("realtia_actividades").select("id, agente_id, tipo, titulo, estado, fecha_hora"),
+          supabase.from("realtia_kyc").select("id, agente_id, contacto_id, nivel_riesgo, estado, coincidencia_listas, created_at"),
         ]);
         setEquipo(equipoRes.data || []);
         setOficinaCartera({
@@ -120,10 +127,11 @@ export function AppDataProvider({ children }) {
           oportunidades: oportunidadesOfRes.data || [],
           captaciones: captacionesOfRes.data || [],
           actividades: actividadesOfRes.data || [],
+          kyc: kycOfRes.data || [],
         });
       } else {
         setEquipo([]);
-        setOficinaCartera({ contactos: [], oportunidades: [], captaciones: [], actividades: [] });
+        setOficinaCartera({ contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [] });
       }
     } catch (err) {
       console.error("recargarTodo", err);
@@ -299,6 +307,51 @@ export function AppDataProvider({ children }) {
     return { ok: true };
   }
 
+  async function crearKyc(data) {
+    const riesgo = calcularRiesgo(data);
+    const { data: row, error } = await supabase
+      .from("realtia_kyc")
+      .insert({ agente_id: agenteId, ...kycToRow({ estado: "pendiente", puntajeRiesgo: riesgo.puntaje, nivelRiesgo: riesgo.nivel, ...data }) })
+      .select().single();
+    if (error) { console.error("crearKyc", error); return { ok: false, error: error.message }; }
+    setKyc((prev) => [kycFromRow(row), ...prev]);
+    return { ok: true, id: row.id };
+  }
+
+  async function actualizarKyc(id, datos) {
+    const registro = kyc.find((k) => k.id === id);
+    if (!registro) return { ok: false, error: "Registro no encontrado" };
+    const actualizado = { ...registro, ...datos };
+    const riesgo = calcularRiesgo(actualizado);
+    actualizado.puntajeRiesgo = riesgo.puntaje;
+    actualizado.nivelRiesgo = riesgo.nivel;
+    const { error } = await supabase.from("realtia_kyc").update(kycToRow(actualizado)).eq("id", id);
+    if (error) { console.error("actualizarKyc", error); return { ok: false, error: error.message }; }
+    setKyc((prev) => prev.map((k) => (k.id === id ? actualizado : k)));
+    return { ok: true };
+  }
+
+  // Screening contra la lista pública OFAC (función de Supabase, ver
+  // supabase/functions/verificar-listas) — nunca decide sola, solo marca la coincidencia
+  // para que la revise una persona antes de aprobar o rechazar.
+  async function verificarListasKyc(id) {
+    const registro = kyc.find((k) => k.id === id);
+    if (!registro) return { ok: false, error: "Registro no encontrado" };
+    const nombre = contactoNombre(registro.contactoId);
+    try {
+      const { data, error } = await supabase.functions.invoke("verificar-listas", { body: { nombre } });
+      if (error) throw error;
+      return actualizarKyc(id, {
+        coincidenciaListas: !!data.coincidencia,
+        detalleListas: data.resultados || [],
+        verificadoEn: data.verificadoEn || new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("verificarListasKyc", err);
+      return { ok: false, error: "No se pudo consultar la lista de sanciones. Intenta de nuevo." };
+    }
+  }
+
   async function guardarACM(captacionId, datos) {
     const { error } = await supabase.from("realtia_captaciones").update({ acm: datos }).eq("id", captacionId);
     if (error) { console.error("guardarACM", error); return; }
@@ -365,6 +418,7 @@ export function AppDataProvider({ children }) {
     else if (key === "captacion") setCrearCaptacionAbierto(true);
     else if (key === "agenda") setCrearActividadAbierto(true);
     else if (key === "requerimientos") setCrearRequerimientoAbierto(true);
+    else if (key === "kyc") setCrearKycAbierto(true);
     else if (key === "contactos-todos") setVista("contactos");
     else if (key === "propiedades-ver") setVista("propiedades");
     else if (key === "llamar" || key === "whatsapp" || key === "email") setContactarTipo(key);
@@ -420,12 +474,13 @@ export function AppDataProvider({ children }) {
   const value = {
     vista, setVista,
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil, actualizarMeta,
-    contactos, oportunidades, actividades, captaciones, requerimientos,
+    contactos, oportunidades, actividades, captaciones, requerimientos, kyc,
     equipo, oficinaCartera, directorioOficina, propiedadesOficina,
     contactoNombre, nombreAgente, registrarContacto, agregarNota,
     crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad,
     crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, cambiarDisponibilidad, crearPropiedadExistente, guardarACM, guardarDescripcionIA,
     crearRequerimiento, actualizarRequerimiento,
+    crearKyc, actualizarKyc, verificarListasKyc,
     crearActividad, completarActividad, reprogramarActividad, cancelarActividad,
     cargarDatosDemo,
     crearContactoAbierto, setCrearContactoAbierto,
@@ -433,6 +488,7 @@ export function AppDataProvider({ children }) {
     crearCaptacionAbierto, setCrearCaptacionAbierto,
     crearActividadAbierto, setCrearActividadAbierto,
     crearRequerimientoAbierto, setCrearRequerimientoAbierto,
+    crearKycAbierto, setCrearKycAbierto,
     contactarTipo, setContactarTipo,
     expedienteId, abrirExpediente, cerrarExpediente,
     manejarAccionRapida,

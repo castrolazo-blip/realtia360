@@ -153,6 +153,52 @@ export function captacionToRow(c) {
   };
 }
 
+export function kycFromRow(row) {
+  return {
+    id: row.id,
+    agenteId: row.agente_id,
+    contactoId: row.contacto_id,
+    oportunidadId: row.oportunidad_id,
+    tipoDocumento: row.tipo_documento,
+    numeroDocumento: row.numero_documento,
+    ocupacion: row.ocupacion,
+    origenFondos: row.origen_fondos,
+    formaPago: row.forma_pago,
+    montoTransaccion: row.monto_transaccion,
+    paisAltoRiesgo: row.pais_alto_riesgo,
+    personaExpuestaPoliticamente: row.persona_expuesta_politicamente,
+    coincidenciaListas: row.coincidencia_listas,
+    detalleListas: row.detalle_listas || [],
+    verificadoEn: row.verificado_en,
+    puntajeRiesgo: row.puntaje_riesgo,
+    nivelRiesgo: row.nivel_riesgo,
+    estado: row.estado,
+    notas: row.notas,
+    creadoEn: row.created_at,
+  };
+}
+export function kycToRow(k) {
+  return {
+    contacto_id: k.contactoId,
+    oportunidad_id: k.oportunidadId ?? null,
+    tipo_documento: k.tipoDocumento ?? null,
+    numero_documento: k.numeroDocumento ?? null,
+    ocupacion: k.ocupacion ?? null,
+    origen_fondos: k.origenFondos ?? null,
+    forma_pago: k.formaPago ?? null,
+    monto_transaccion: k.montoTransaccion ?? null,
+    pais_alto_riesgo: !!k.paisAltoRiesgo,
+    persona_expuesta_politicamente: !!k.personaExpuestaPoliticamente,
+    coincidencia_listas: !!k.coincidenciaListas,
+    detalle_listas: k.detalleListas ?? [],
+    verificado_en: k.verificadoEn ?? null,
+    puntaje_riesgo: k.puntajeRiesgo ?? null,
+    nivel_riesgo: k.nivelRiesgo ?? null,
+    estado: k.estado ?? "pendiente",
+    notas: k.notas ?? null,
+  };
+}
+
 export function requerimientoFromRow(row) {
   return {
     id: row.id,

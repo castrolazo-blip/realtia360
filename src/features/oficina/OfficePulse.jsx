@@ -15,6 +15,7 @@ export function OfficePulse() {
 
   const porAgente = useMemo(() => calcularResumenPorAgente(equipo, oficinaCartera), [equipo, oficinaCartera]);
   const totales = useMemo(() => calcularTotalesOficina(porAgente), [porAgente]);
+  const kycAltoRiesgoPendiente = oficinaCartera.kyc.filter((k) => k.nivel_riesgo === "alto" && k.estado === "pendiente").length;
 
   return (
     <div className="px-4 py-5 lg:px-0 lg:py-0">
@@ -30,12 +31,20 @@ export function OfficePulse() {
       <div className="mb-6 rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-brand-900 p-6 text-white shadow-premium lg:p-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Producción cerrada de la oficina</p>
         <p className="mt-1 font-display text-2xl font-semibold lg:text-3xl">{formatMoney(totales.valorCerrado)}</p>
-        {totales.actividadesVencidas > 0 && (
-          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-200">
-            <Icon.Bell className="h-3.5 w-3.5" />
-            {totales.actividadesVencidas} {totales.actividadesVencidas === 1 ? "actividad vencida" : "actividades vencidas"} en el equipo
-          </p>
-        )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {totales.actividadesVencidas > 0 && (
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-200">
+              <Icon.Bell className="h-3.5 w-3.5" />
+              {totales.actividadesVencidas} {totales.actividadesVencidas === 1 ? "actividad vencida" : "actividades vencidas"} en el equipo
+            </p>
+          )}
+          {kycAltoRiesgoPendiente > 0 && (
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-200">
+              <Icon.Shield className="h-3.5 w-3.5" />
+              {kycAltoRiesgoPendiente} {kycAltoRiesgoPendiente === 1 ? "expediente KYC de riesgo alto" : "expedientes KYC de riesgo alto"} sin revisar
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="mb-3 flex items-center justify-between">
