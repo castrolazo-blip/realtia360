@@ -5,6 +5,7 @@ export const NAV_ASESOR = [
   { key: "inicio", label: "Inicio", icon: Icon.Home },
   { key: "contactos", label: "Contactos", icon: Icon.Users },
   { key: "oportunidades", label: "Oportunidades", icon: Icon.Target },
+  { key: "documentos", label: "Documentos", icon: Icon.File },
   { key: "captacion", label: "Captación", icon: Icon.Clipboard },
   { key: "propiedades", label: "Propiedades", icon: Icon.Building },
   { key: "requerimientos", label: "Requerimientos", icon: Icon.ListSearch },
@@ -38,11 +39,15 @@ export const ACCIONES_RAPIDAS = [
   { key: "propiedades-ver", label: "Ver\npropiedades", icon: Icon.Building, accent: "bg-gray-100 text-gray-600" },
   { key: "kyc", label: "Nuevo\nKYC", icon: Icon.Shield, accent: "bg-rose-50 text-rose-700" },
   { key: "contactos-todos", label: "Ver\ncontactos", icon: Icon.Search, accent: "bg-gray-100 text-gray-600" },
+  { key: "documentos-ver", label: "Ver\ndocumentos", icon: Icon.File, accent: "bg-sky-50 text-sky-700" },
 ];
 
-// El móvil no muestra los 8 módulos del asesor en la barra inferior (ver README) —
-// Propiedades, Requerimientos y Cumplimiento siguen a un toque de distancia desde los
-// accesos rápidos de Inicio. El Broker tiene solo 6 módulos en total, así que sí caben todos.
-export const NAV_MOVIL_ASESOR = NAV_ASESOR.filter((item) => item.key !== "propiedades" && item.key !== "requerimientos" && item.key !== "kyc");
+// El móvil no muestra los 9 módulos del asesor en la barra inferior (ver README) —
+// Propiedades, Requerimientos, Cumplimiento y Documentos siguen a un toque de distancia
+// desde los accesos rápidos de Inicio (o desde la propia oportunidad). El Broker tiene
+// solo 6 módulos en total, así que sí caben todos.
+export const NAV_MOVIL_ASESOR = NAV_ASESOR.filter(
+  (item) => item.key !== "propiedades" && item.key !== "requerimientos" && item.key !== "kyc" && item.key !== "documentos"
+);
 export const NAV_MOVIL = NAV_MOVIL_ASESOR;
 export const NAV_MOVIL_BROKER = NAV_BROKER;

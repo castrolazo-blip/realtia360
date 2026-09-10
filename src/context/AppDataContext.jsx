@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { supabase } from "../lib/supabaseClient.js";
 import { useAuth } from "./AuthContext.jsx";
 import { nuevoChecklist } from "../constants/captacion.js";
+import { checklistDocumentos } from "../constants/documentos.js";
 import { agency as agencyPorDefecto } from "../config/agency.js";
 import {
   contactoFromRow, contactoToRow,
@@ -10,6 +11,7 @@ import {
   captacionFromRow, captacionToRow,
   requerimientoFromRow, requerimientoToRow,
   kycFromRow, kycToRow,
+  documentoFromRow, documentoToRow,
   perfilFromRow,
 } from "../lib/db/mappers.js";
 import { calcularRiesgo } from "../features/kyc/riesgo.js";
@@ -32,6 +34,7 @@ export function AppDataProvider({ children }) {
   const [captaciones, setCaptaciones] = useState([]);
   const [requerimientos, setRequerimientos] = useState([]);
   const [kyc, setKyc] = useState([]);
+  const [documentos, setDocumentos] = useState([]);
   const [perfil, setPerfil] = useState(null);
 
   // Directorio (id + nombre + rol de los compañeros de oficina) y propiedades publicadas
@@ -46,7 +49,7 @@ export function AppDataProvider({ children }) {
   // de toda la oficina, de solo lectura (el RLS de la base de datos es quien realmente
   // impide que un asesor vea esto — este estado solo existe si el perfil es broker).
   const [equipo, setEquipo] = useState([]);
-  const [oficinaCartera, setOficinaCartera] = useState({ contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [] });
+  const [oficinaCartera, setOficinaCartera] = useState({ contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [], documentos: [] });
 
   const [crearContactoAbierto, setCrearContactoAbierto] = useState(false);
   const [crearOportunidadAbierto, setCrearOportunidadAbierto] = useState(false);
@@ -56,13 +59,14 @@ export function AppDataProvider({ children }) {
   const [crearKycAbierto, setCrearKycAbierto] = useState(false);
   const [contactarTipo, setContactarTipo] = useState(null); // 'llamar' | 'whatsapp' | 'email'
   const [expedienteId, setExpedienteId] = useState(null); // contacto cuyo expediente está abierto
+  const [documentosOportunidadId, setDocumentosOportunidadId] = useState(null); // oportunidad cuyo expediente de documentos está abierto
 
   const recargarTodo = useCallback(async () => {
     if (!agenteId) return;
     setCargando(true);
     setErrorCarga("");
     try {
-      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes, requerimientosRes, kycRes] = await Promise.all([
+      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes, requerimientosRes, kycRes, documentosRes] = await Promise.all([
         supabase.from("realtia_perfiles").select("*").eq("id", agenteId).maybeSingle(),
         supabase.from("realtia_contactos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_oportunidades").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
@@ -70,6 +74,7 @@ export function AppDataProvider({ children }) {
         supabase.from("realtia_captaciones").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_requerimientos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_kyc").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
+        supabase.from("realtia_documentos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
       ]);
       // Red de seguridad: si por alguna razón el trigger de la base de datos no creó el
       // perfil al registrarse, lo creamos aquí mismo con lo que haya en los metadatos de auth.
@@ -94,6 +99,7 @@ export function AppDataProvider({ children }) {
       setCaptaciones((captacionesRes.data || []).map(captacionFromRow));
       setRequerimientos((requerimientosRes.data || []).map(requerimientoFromRow));
       setKyc((kycRes.data || []).map(kycFromRow));
+      setDocumentos((documentosRes.data || []).map(documentoFromRow));
 
       // Propiedades: inventario publicado de toda la oficina, y el directorio (id/nombre)
       // de los compañeros para poder mostrar quién es el asesor responsable. Esto es para
@@ -113,13 +119,14 @@ export function AppDataProvider({ children }) {
       // Office Pulse: si el perfil es de un Broker, trae además el equipo y la cartera de
       // toda la oficina (el RLS deja pasar estas filas solo porque el perfil es broker).
       if (perfilMapeado?.rol === "broker" && perfilMapeado.oficinaId) {
-        const [equipoRes, contactosOfRes, oportunidadesOfRes, captacionesOfRes, actividadesOfRes, kycOfRes] = await Promise.all([
+        const [equipoRes, contactosOfRes, oportunidadesOfRes, captacionesOfRes, actividadesOfRes, kycOfRes, documentosOfRes] = await Promise.all([
           supabase.from("realtia_perfiles").select("id, nombre_agente, rol"),
           supabase.from("realtia_contactos").select("id, agente_id, clasificacion, ultimo_contacto, created_at"),
           supabase.from("realtia_oportunidades").select("id, agente_id, etapa, estado, valor, created_at, cerrada_en"),
           supabase.from("realtia_captaciones").select("id, agente_id, estado, precio, comision_pct, created_at"),
           supabase.from("realtia_actividades").select("id, agente_id, tipo, titulo, estado, fecha_hora"),
           supabase.from("realtia_kyc").select("id, agente_id, contacto_id, nivel_riesgo, estado, coincidencia_listas, created_at"),
+          supabase.from("realtia_documentos").select("id, agente_id, oportunidad_id, tipo, estado, created_at"),
         ]);
         setEquipo(equipoRes.data || []);
         setOficinaCartera({
@@ -128,10 +135,11 @@ export function AppDataProvider({ children }) {
           captaciones: captacionesOfRes.data || [],
           actividades: actividadesOfRes.data || [],
           kyc: kycOfRes.data || [],
+          documentos: documentosOfRes.data || [],
         });
       } else {
         setEquipo([]);
-        setOficinaCartera({ contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [] });
+        setOficinaCartera({ contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [], documentos: [] });
       }
     } catch (err) {
       console.error("recargarTodo", err);
@@ -149,6 +157,8 @@ export function AppDataProvider({ children }) {
   const nombreAgente = (id) => (id === agenteId ? agency.nombreAgente : directorioOficina.find((p) => p.id === id)?.nombre_agente) || "—";
   const abrirExpediente = (id) => setExpedienteId(id);
   const cerrarExpediente = () => setExpedienteId(null);
+  const abrirDocumentos = (oportunidadId) => setDocumentosOportunidadId(oportunidadId);
+  const cerrarDocumentos = () => setDocumentosOportunidadId(null);
 
   async function crearActividad(data) {
     const { data: row, error } = await supabase.from("realtia_actividades").insert({ agente_id: agenteId, ...actividadToRow(data) }).select().single();
@@ -352,6 +362,80 @@ export function AppDataProvider({ children }) {
     }
   }
 
+  // Expediente de Documentos de una Oportunidad — checklist + archivos, para que el
+  // asesor deje de llevar esto aparte en Drive. Se crea perezosamente: la primera vez que
+  // se abre el expediente de una oportunidad sin documentos todavía, se inserta el
+  // checklist estándar (según el tipo de oportunidad) en estado "pendiente".
+  async function asegurarChecklistDocumentos(oportunidadId) {
+    if (documentos.some((d) => d.oportunidadId === oportunidadId)) return;
+    const op = oportunidades.find((o) => o.id === oportunidadId);
+    if (!op) return;
+    const tipos = checklistDocumentos(op.tipo);
+    const { data, error } = await supabase
+      .from("realtia_documentos")
+      .insert(tipos.map((tipo) => ({ agente_id: agenteId, ...documentoToRow({ oportunidadId, tipo, estado: "pendiente" }) })))
+      .select();
+    if (error) { console.error("asegurarChecklistDocumentos", error); return; }
+    setDocumentos((prev) => [...prev, ...(data || []).map(documentoFromRow)]);
+  }
+
+  async function agregarDocumentoPersonalizado(oportunidadId, nombre) {
+    if (!nombre.trim()) return;
+    const { data: row, error } = await supabase
+      .from("realtia_documentos")
+      .insert({ agente_id: agenteId, ...documentoToRow({ oportunidadId, tipo: "otro", nombre: nombre.trim(), estado: "pendiente" }) })
+      .select().single();
+    if (error) { console.error("agregarDocumentoPersonalizado", error); return; }
+    setDocumentos((prev) => [...prev, documentoFromRow(row)]);
+  }
+
+  async function eliminarDocumento(id) {
+    const doc = documentos.find((d) => d.id === id);
+    if (doc?.archivoPath) await supabase.storage.from("realtia-documentos").remove([doc.archivoPath]);
+    const { error } = await supabase.from("realtia_documentos").delete().eq("id", id);
+    if (error) { console.error("eliminarDocumento", error); return; }
+    setDocumentos((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  // Sube el archivo al bucket privado (ruta agente_id/oportunidad_id/documento_id-nombre,
+  // la misma que validan las políticas de storage.objects) y marca el documento "subido".
+  async function subirDocumento(id, archivo) {
+    const doc = documentos.find((d) => d.id === id);
+    if (!doc) return { ok: false, error: "Documento no encontrado" };
+    const path = `${agenteId}/${doc.oportunidadId}/${id}-${archivo.name}`;
+    const { error: uploadError } = await supabase.storage.from("realtia-documentos").upload(path, archivo, { upsert: true });
+    if (uploadError) { console.error("subirDocumento", uploadError); return { ok: false, error: uploadError.message }; }
+    const { error } = await supabase.from("realtia_documentos").update({ archivo_path: path, archivo_nombre: archivo.name, estado: "subido" }).eq("id", id);
+    if (error) { console.error("subirDocumento", error); return { ok: false, error: error.message }; }
+    setDocumentos((prev) => prev.map((d) => (d.id === id ? { ...d, archivoPath: path, archivoNombre: archivo.name, estado: "subido" } : d)));
+    return { ok: true };
+  }
+
+  async function quitarArchivoDocumento(id) {
+    const doc = documentos.find((d) => d.id === id);
+    if (!doc?.archivoPath) return;
+    await supabase.storage.from("realtia-documentos").remove([doc.archivoPath]);
+    const { error } = await supabase.from("realtia_documentos").update({ archivo_path: null, archivo_nombre: null, estado: "pendiente" }).eq("id", id);
+    if (error) { console.error("quitarArchivoDocumento", error); return; }
+    setDocumentos((prev) => prev.map((d) => (d.id === id ? { ...d, archivoPath: null, archivoNombre: null, estado: "pendiente" } : d)));
+  }
+
+  async function actualizarEstadoDocumento(id, estado) {
+    const { error } = await supabase.from("realtia_documentos").update({ estado }).eq("id", id);
+    if (error) { console.error("actualizarEstadoDocumento", error); return; }
+    setDocumentos((prev) => prev.map((d) => (d.id === id ? { ...d, estado } : d)));
+  }
+
+  // URL firmada de corta duración — el bucket es privado, así que no hay una URL pública
+  // fija que guardar; se pide una nueva cada vez que el asesor quiere ver/descargar.
+  async function urlDescargaDocumento(id) {
+    const doc = documentos.find((d) => d.id === id);
+    if (!doc?.archivoPath) return null;
+    const { data, error } = await supabase.storage.from("realtia-documentos").createSignedUrl(doc.archivoPath, 300);
+    if (error) { console.error("urlDescargaDocumento", error); return null; }
+    return data?.signedUrl || null;
+  }
+
   async function guardarACM(captacionId, datos) {
     const { error } = await supabase.from("realtia_captaciones").update({ acm: datos }).eq("id", captacionId);
     if (error) { console.error("guardarACM", error); return; }
@@ -421,6 +505,7 @@ export function AppDataProvider({ children }) {
     else if (key === "kyc") setCrearKycAbierto(true);
     else if (key === "contactos-todos") setVista("contactos");
     else if (key === "propiedades-ver") setVista("propiedades");
+    else if (key === "documentos-ver") setVista("documentos");
     else if (key === "llamar" || key === "whatsapp" || key === "email") setContactarTipo(key);
   }
 
@@ -474,13 +559,15 @@ export function AppDataProvider({ children }) {
   const value = {
     vista, setVista,
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil, actualizarMeta,
-    contactos, oportunidades, actividades, captaciones, requerimientos, kyc,
+    contactos, oportunidades, actividades, captaciones, requerimientos, kyc, documentos,
     equipo, oficinaCartera, directorioOficina, propiedadesOficina,
     contactoNombre, nombreAgente, registrarContacto, agregarNota,
     crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad,
     crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, cambiarDisponibilidad, crearPropiedadExistente, guardarACM, guardarDescripcionIA,
     crearRequerimiento, actualizarRequerimiento,
     crearKyc, actualizarKyc, verificarListasKyc,
+    asegurarChecklistDocumentos, agregarDocumentoPersonalizado, eliminarDocumento,
+    subirDocumento, quitarArchivoDocumento, actualizarEstadoDocumento, urlDescargaDocumento,
     crearActividad, completarActividad, reprogramarActividad, cancelarActividad,
     cargarDatosDemo,
     crearContactoAbierto, setCrearContactoAbierto,
@@ -491,6 +578,7 @@ export function AppDataProvider({ children }) {
     crearKycAbierto, setCrearKycAbierto,
     contactarTipo, setContactarTipo,
     expedienteId, abrirExpediente, cerrarExpediente,
+    documentosOportunidadId, abrirDocumentos, cerrarDocumentos,
     manejarAccionRapida,
   };
 

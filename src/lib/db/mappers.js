@@ -226,6 +226,32 @@ export function requerimientoToRow(r) {
   };
 }
 
+export function documentoFromRow(row) {
+  return {
+    id: row.id,
+    agenteId: row.agente_id,
+    oportunidadId: row.oportunidad_id,
+    tipo: row.tipo,
+    nombre: row.nombre,
+    estado: row.estado,
+    archivoPath: row.archivo_path,
+    archivoNombre: row.archivo_nombre,
+    notas: row.notas,
+    creadoEn: row.created_at,
+  };
+}
+export function documentoToRow(d) {
+  return {
+    oportunidad_id: d.oportunidadId,
+    tipo: d.tipo,
+    nombre: d.nombre ?? null,
+    estado: d.estado ?? "pendiente",
+    archivo_path: d.archivoPath ?? null,
+    archivo_nombre: d.archivoNombre ?? null,
+    notas: d.notas ?? null,
+  };
+}
+
 export function perfilFromRow(row) {
   return {
     id: row.id,

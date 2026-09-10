@@ -22,6 +22,8 @@ import { Proyecciones } from "./features/proyecciones/Proyecciones.jsx";
 import { Administracion } from "./features/administracion/Administracion.jsx";
 import { Kyc } from "./features/kyc/Kyc.jsx";
 import { CrearKycModal } from "./features/kyc/CrearKycModal.jsx";
+import { Documentos } from "./features/documentos/Documentos.jsx";
+import { DetalleDocumentosModal } from "./features/documentos/DetalleDocumentosModal.jsx";
 import { ContactarModal } from "./components/shared/ContactarModal.jsx";
 
 const VISTAS = {
@@ -31,6 +33,7 @@ const VISTAS = {
   propiedades: Propiedades,
   requerimientos: Requerimientos,
   kyc: Kyc,
+  documentos: Documentos,
   agenda: Agenda,
   // Solo alcanzables desde el nav del Broker (NAV_BROKER) — un asesor nunca ve estos
   // botones, así que en la práctica nunca navega acá.
@@ -81,6 +84,7 @@ function GlobalModals() {
       <CrearKycModal open={crearKycAbierto} onClose={() => setCrearKycAbierto(false)} contactos={contactos} onCrear={crearKyc} />
       <ContactarModal tipo={contactarTipo} onClose={() => setContactarTipo(null)} contactos={contactos} onRegistrar={registrarContacto} />
       <DetalleContactoModal />
+      <DetalleDocumentosModal />
     </>
   );
 }

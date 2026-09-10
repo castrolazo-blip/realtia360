@@ -63,6 +63,7 @@ src/
     propiedades/             inventario publicado de toda la oficina (solo lectura)
     requerimientos/           lo que busca un comprador + matching contra el inventario
     kyc/                      cumplimiento — identificación, riesgo por reglas, listas OFAC
+    documentos/               expediente documental de cada oportunidad — checklist + archivos
     agenda/                   lista + calendario de actividades
 ```
 
@@ -275,6 +276,36 @@ todavía, ningún módulo sube archivos aún) y una función nueva similar a
 (hoy Office Pulse solo alerta cuántos expedientes de riesgo alto quedan pendientes, no hay
 un dashboard de cumplimiento dedicado para el Broker).
 
+## Documentos — el expediente de cada oportunidad
+
+Módulo nuevo (`features/documentos`, tabla `realtia_documentos`) pensado para que el
+asesor deje de llevar el expediente del cliente aparte en Drive: cada **Oportunidad**
+tiene su propio expediente de documentos, con un checklist que se crea solo (según si la
+oportunidad es de venta/captación o de compra/alquiler) y un lugar para subir el archivo
+de cada uno — Ficha de Conocimiento a tu Cliente, Acuerdo de Exclusiva o de Promoción,
+identificación, comprobante de ingresos, comparativo de ingresos, y cualquier documento
+adicional que el asesor quiera agregar a mano. Se abre desde el detalle de la
+oportunidad ("📄 Documentos") o desde la pestaña **Documentos** de la navegación, que
+lista todas las oportunidades activas con su progreso (`x/y documentos`).
+
+Cada documento tiene un estado (`pendiente` → `subido` → `aprobado`/`rechazado`) y, si
+tiene archivo, se guarda en el bucket privado `realtia-documentos` de Supabase Storage,
+bajo la ruta `{agente_id}/{oportunidad_id}/{documento_id}-{nombre}` — la política de RLS
+de `storage.objects` usa esa primera carpeta para validar dueño, con el mismo patrón de
+"el Broker puede leer, nunca editar, lo de su oficina" que el resto de la cartera. Ver
+`supabase/migrations/20260910120000_documentos_oportunidad.sql`.
+
+**Fase 1 (este corte):** expediente, checklist por tipo de operación y subida/almacenamiento
+de archivos — el catálogo de tipos de documento vive en `src/constants/documentos.js`.
+
+**Pendiente, fase 2:** el auto-llenado real de los contratos (que el sistema genere el
+Acuerdo de Exclusiva, el Acuerdo de Promoción y la Ficha de Conocimiento a tu Cliente ya
+con los datos de la oportunidad/contacto, no solo guardar el archivo que suba el asesor)
+está pendiente de que Ronald comparta los formatos actuales de RE/MAX Expansion — mientras
+tanto, el checklist usa una heurística de plaza razonable para decidir qué tipos de
+documento pedir según el tipo de oportunidad, ajustable en ese mismo archivo de
+constantes en cuanto lleguen las plantillas reales.
+
 ## Comercialización por planes
 
 `src/config/plans.js` define Basic / Gold / Premium (con límites de referencia) y
@@ -289,8 +320,11 @@ hoy cualquier cuenta nueva se crea en `basic` pero puede usar todo sin restricci
 - Recuperar contraseña / editar perfil desde la UI.
 - Cargar `ANTHROPIC_API_KEY` como secreto del proyecto de Supabase (ver sección de arriba).
 - Matching de Requerimientos con ponderación tipo "Buyer DNA" (necesario / muy importante /
-  deseable) en vez de reglas fijas; y expedientes/documentos de la propiedad en Google
-  Drive (hoy las captaciones no tienen fotos, solo datos estructurados).
+  deseable) en vez de reglas fijas; y fotos de la propiedad en la captación (hoy solo
+  guarda datos estructurados, sin imágenes).
+- Auto-llenado real de los contratos del módulo Documentos (Acuerdo de Exclusiva, Acuerdo
+  de Promoción, Ficha de Conocimiento a tu Cliente) — pendiente de los formatos reales de
+  RE/MAX Expansion; ver sección "Documentos" arriba.
 - Empaquetado como app de Android/iOS (esta base en Vite + React está lista para envolverse
   con Capacitor sin reescribir pantallas).
 

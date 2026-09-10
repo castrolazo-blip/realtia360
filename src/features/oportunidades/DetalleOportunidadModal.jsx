@@ -9,7 +9,7 @@ import { AgendarSeguimientoModal } from "./AgendarSeguimientoModal.jsx";
 
 const OPCIONES_ETAPA = ETAPAS.map((e) => ({ value: e, label: ETAPA_LABEL[e] }));
 
-export function DetalleOportunidadModal({ id, oportunidades, contactos, contactoNombre, onClose, onAbrirContacto, onActualizar, onCerrar, onAgendarSeguimiento }) {
+export function DetalleOportunidadModal({ id, oportunidades, contactos, contactoNombre, onClose, onAbrirContacto, onAbrirDocumentos, onActualizar, onCerrar, onAgendarSeguimiento }) {
   const [editando, setEditando] = useState(false);
   const [cerrarAbierto, setCerrarAbierto] = useState(false);
   const [agendarAbierto, setAgendarAbierto] = useState(false);
@@ -42,6 +42,19 @@ export function DetalleOportunidadModal({ id, oportunidades, contactos, contacto
               <p className="text-sm font-semibold text-gray-900">{contactoNombre(o.contactoId)}</p>
               <p className="text-[11px] text-black/40">Contacto</p>
             </div>
+          </div>
+          <span className="text-xs font-medium text-brand-700">Ver expediente →</span>
+        </button>
+
+        <button
+          onClick={() => onAbrirDocumentos(o.id)}
+          className="flex items-center justify-between rounded-xl border border-black/10 px-3 py-2.5 text-left hover:bg-gray-50"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-700">
+              📄
+            </span>
+            <p className="text-sm font-semibold text-gray-900">Documentos</p>
           </div>
           <span className="text-xs font-medium text-brand-700">Ver expediente →</span>
         </button>
