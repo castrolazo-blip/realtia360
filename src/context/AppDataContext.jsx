@@ -10,12 +10,16 @@ import {
   captacionFromRow, captacionToRow,
   requerimientoFromRow, requerimientoToRow,
   kycFromRow, kycToRow,
+  interaccionFromRow,
   perfilFromRow,
 } from "../lib/db/mappers.js";
 import { calcularRiesgo } from "../features/kyc/riesgo.js";
+import { RESULTADOS, HORA_LLAMADA_DEFECTO } from "../constants/gestion.js";
 import { CONTACTOS_INICIALES, OPORTUNIDADES_INICIALES, ACTIVIDADES_INICIALES, CAPTACIONES_INICIALES } from "../data/seed.js";
 
 const AppDataContext = createContext(null);
+
+const METRICAS_VACIAS = { contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [], interacciones: [] };
 
 // Centraliza la cartera (contactos, oportunidades, actividades, captaciones), el perfil
 // del agente y la navegación de la app. Todo vive en Supabase — este contexto es la
@@ -32,6 +36,11 @@ export function AppDataProvider({ children }) {
   const [captaciones, setCaptaciones] = useState([]);
   const [requerimientos, setRequerimientos] = useState([]);
   const [kyc, setKyc] = useState([]);
+  const [interacciones, setInteracciones] = useState([]);
+  // Contacto que se quiere llamar directamente desde su ficha (fuera del orden de la cola).
+  const [llamarA, setLlamarA] = useState(null);
+  // Filtro con el que se abre Contactos cuando se llega desde el círculo virtuoso.
+  const [filtroContactos, setFiltroContactos] = useState("");
   const [perfil, setPerfil] = useState(null);
 
   // Directorio (id + nombre + rol de los compañeros de oficina) y propiedades publicadas
@@ -42,11 +51,11 @@ export function AppDataProvider({ children }) {
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState("");
 
-  // Solo se llenan para un Broker: su equipo (perfiles de la misma oficina) y la cartera
-  // de toda la oficina, de solo lectura (el RLS de la base de datos es quien realmente
-  // impide que un asesor vea esto — este estado solo existe si el perfil es broker).
+  // Solo se llenan para un Broker: su equipo (perfiles de la misma oficina) y las MÉTRICAS
+  // de toda la oficina — solo números y estados, nunca nombres, teléfonos ni notas de los
+  // clientes de cada asesor (lo garantiza la función realtia_metricas_oficina en la base).
   const [equipo, setEquipo] = useState([]);
-  const [oficinaCartera, setOficinaCartera] = useState({ contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [] });
+  const [oficinaCartera, setOficinaCartera] = useState(METRICAS_VACIAS);
 
   const [crearContactoAbierto, setCrearContactoAbierto] = useState(false);
   const [crearOportunidadAbierto, setCrearOportunidadAbierto] = useState(false);
@@ -54,6 +63,7 @@ export function AppDataProvider({ children }) {
   const [crearActividadAbierto, setCrearActividadAbierto] = useState(false);
   const [crearRequerimientoAbierto, setCrearRequerimientoAbierto] = useState(false);
   const [crearKycAbierto, setCrearKycAbierto] = useState(false);
+  const [importarAbierto, setImportarAbierto] = useState(false);
   const [contactarTipo, setContactarTipo] = useState(null); // 'llamar' | 'whatsapp' | 'email'
   const [expedienteId, setExpedienteId] = useState(null); // contacto cuyo expediente está abierto
 
@@ -62,7 +72,7 @@ export function AppDataProvider({ children }) {
     setCargando(true);
     setErrorCarga("");
     try {
-      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes, requerimientosRes, kycRes] = await Promise.all([
+      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes, requerimientosRes, kycRes, interaccionesRes] = await Promise.all([
         supabase.from("realtia_perfiles").select("*").eq("id", agenteId).maybeSingle(),
         supabase.from("realtia_contactos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_oportunidades").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
@@ -70,6 +80,7 @@ export function AppDataProvider({ children }) {
         supabase.from("realtia_captaciones").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_requerimientos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_kyc").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
+        supabase.from("realtia_interacciones").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }).limit(3000),
       ]);
       // Red de seguridad: si por alguna razón el trigger de la base de datos no creó el
       // perfil al registrarse, lo creamos aquí mismo con lo que haya en los metadatos de auth.
@@ -94,6 +105,7 @@ export function AppDataProvider({ children }) {
       setCaptaciones((captacionesRes.data || []).map(captacionFromRow));
       setRequerimientos((requerimientosRes.data || []).map(requerimientoFromRow));
       setKyc((kycRes.data || []).map(kycFromRow));
+      setInteracciones((interaccionesRes.data || []).map(interaccionFromRow));
 
       // Propiedades: inventario publicado de toda la oficina, y el directorio (id/nombre)
       // de los compañeros para poder mostrar quién es el asesor responsable. Esto es para
@@ -110,28 +122,18 @@ export function AppDataProvider({ children }) {
         setPropiedadesOficina([]);
       }
 
-      // Office Pulse: si el perfil es de un Broker, trae además el equipo y la cartera de
-      // toda la oficina (el RLS deja pasar estas filas solo porque el perfil es broker).
+      // Office Pulse: si el perfil es de un Broker, trae además el equipo y las métricas de
+      // la oficina. Solo números: la función de la base no devuelve ningún dato del cliente.
       if (perfilMapeado?.rol === "broker" && perfilMapeado.oficinaId) {
-        const [equipoRes, contactosOfRes, oportunidadesOfRes, captacionesOfRes, actividadesOfRes, kycOfRes] = await Promise.all([
+        const [equipoRes, metricasRes] = await Promise.all([
           supabase.from("realtia_perfiles").select("id, nombre_agente, rol"),
-          supabase.from("realtia_contactos").select("id, agente_id, clasificacion, ultimo_contacto, created_at"),
-          supabase.from("realtia_oportunidades").select("id, agente_id, etapa, estado, valor, created_at, cerrada_en"),
-          supabase.from("realtia_captaciones").select("id, agente_id, estado, precio, comision_pct, created_at"),
-          supabase.from("realtia_actividades").select("id, agente_id, tipo, titulo, estado, fecha_hora"),
-          supabase.from("realtia_kyc").select("id, agente_id, contacto_id, nivel_riesgo, estado, coincidencia_listas, created_at"),
+          supabase.rpc("realtia_metricas_oficina"),
         ]);
         setEquipo(equipoRes.data || []);
-        setOficinaCartera({
-          contactos: contactosOfRes.data || [],
-          oportunidades: oportunidadesOfRes.data || [],
-          captaciones: captacionesOfRes.data || [],
-          actividades: actividadesOfRes.data || [],
-          kyc: kycOfRes.data || [],
-        });
+        setOficinaCartera({ ...METRICAS_VACIAS, ...(metricasRes.data || {}) });
       } else {
         setEquipo([]);
-        setOficinaCartera({ contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [] });
+        setOficinaCartera(METRICAS_VACIAS);
       }
     } catch (err) {
       console.error("recargarTodo", err);
@@ -388,6 +390,92 @@ export function AppDataProvider({ children }) {
     setActividades((prev) => prev.map((a) => (a.id === id ? { ...a, estado: "cancelada" } : a)));
   }
 
+  // Guarda el resultado de una llamada (o WhatsApp) en un solo paso, como "Guardar y
+  // siguiente" del modo Llamar: registra la interacción, da por hechas las llamadas
+  // pendientes de ese contacto, agenda la próxima (llamada o cita) y actualiza el estado
+  // de gestión del contacto. El asesor solo tocó botones.
+  async function registrarLlamada({ contactoId, actividadId, canal, resultado, resultadoTexto, efectivo, nota, proximaFecha, cita, horaCita, estadoGestion, objetivos }) {
+    const contacto = contactos.find((c) => c.id === contactoId);
+    if (!contacto) return { ok: false, error: "Contacto no encontrado" };
+    const R = RESULTADOS.find((r) => r.key === resultado);
+    const ahora = new Date().toISOString();
+
+    const { data: filaInter, error: errInter } = await supabase
+      .from("realtia_interacciones")
+      .insert({
+        agente_id: agenteId, contacto_id: contactoId, actividad_id: actividadId || null, canal,
+        resultado, resultado_texto: resultadoTexto || null, efectivo: !!efectivo, cita: !!cita, nota: nota || null,
+      })
+      .select().single();
+    if (errInter) { console.error("registrarLlamada", errInter); return { ok: false, error: errInter.message }; }
+    setInteracciones((prev) => [interaccionFromRow(filaInter), ...prev]);
+
+    // Llamadas pendientes de este contacto que ya vencieron (o todas, si se agenda una
+    // nueva) quedan completadas: no tiene sentido que sigan apareciendo en la cola.
+    const finDeHoy = new Date(); finDeHoy.setHours(23, 59, 59, 999);
+    const aCerrar = actividades.filter((a) => a.contactoId === contactoId && a.estado === "pendiente" && a.tipo === "llamada" && (new Date(a.fechaHora) <= finDeHoy || proximaFecha));
+    const textoResultado = resultado === "otro" ? resultadoTexto : R?.label;
+    if (aCerrar.length) {
+      const ids = aCerrar.map((a) => a.id);
+      await supabase.from("realtia_actividades").update({ estado: "completada", resultado: textoResultado }).in("id", ids);
+      setActividades((prev) => prev.map((a) => (ids.includes(a.id) ? { ...a, estado: "completada", resultado: textoResultado } : a)));
+    }
+
+    if (estadoGestion === "no_contactar") {
+      const pendientes = actividades.filter((a) => a.contactoId === contactoId && a.estado === "pendiente" && !aCerrar.some((x) => x.id === a.id));
+      if (pendientes.length) {
+        const ids = pendientes.map((a) => a.id);
+        await supabase.from("realtia_actividades").update({ estado: "cancelada" }).in("id", ids);
+        setActividades((prev) => prev.map((a) => (ids.includes(a.id) ? { ...a, estado: "cancelada" } : a)));
+      }
+    } else if (proximaFecha) {
+      const [h, m] = (cita ? horaCita || "10:00" : HORA_LLAMADA_DEFECTO).split(":").map(Number);
+      const [y, mes, d] = proximaFecha.split("-").map(Number);
+      const fechaHora = new Date(y, mes - 1, d, h, m).toISOString();
+      const primerNombre = contacto.nombre.split(" ")[0];
+      await crearActividad({
+        contactoId, oportunidadId: null,
+        tipo: cita ? "reunion" : "llamada",
+        titulo: cita ? `Cita con ${contacto.nombre}` : `Llamar a ${primerNombre}`,
+        fechaHora, estado: "pendiente", duracion: cita ? 60 : null,
+      });
+    }
+
+    const notaNueva = nota && nota.trim() ? [{ id: crypto.randomUUID(), fecha: ahora, texto: nota.trim() }] : [];
+    await actualizarContacto(contactoId, {
+      estadoGestion: estadoGestion || contacto.estadoGestion,
+      objetivos: objetivos ?? contacto.objetivos,
+      ultimaGestion: ahora,
+      ultimoContacto: efectivo ? ahora : contacto.ultimoContacto,
+      numeroIncorrecto: resultado === "incorrecto" || contacto.numeroIncorrecto,
+      notas: [...notaNueva, ...(contacto.notas || [])],
+    });
+    return { ok: true };
+  }
+
+  // Importación masiva (CSV / Excel / .vcf ya leídos y sin duplicados): entran como "Sin
+  // gestión" y quedan en la cola de Llamar.
+  async function importarContactos(lista) {
+    const filas = lista.map((c) => ({
+      agente_id: agenteId,
+      ...contactoToRow({ nombre: c.nombre, telefono: c.telefono, clasificacion: "contacto_relacion", estadoGestion: "sin_gestion", origen: "importado" }),
+    }));
+    const creados = [];
+    for (let i = 0; i < filas.length; i += 200) {
+      const { data, error } = await supabase.from("realtia_contactos").insert(filas.slice(i, i + 200)).select();
+      if (error) { console.error("importarContactos", error); return { ok: false, error: error.message, creados: creados.length }; }
+      creados.push(...data.map(contactoFromRow));
+    }
+    setContactos((prev) => [...creados, ...prev]);
+    return { ok: true, creados: creados.length };
+  }
+
+  function abrirLlamar(contactoId) {
+    setLlamarA(contactoId || null);
+    setExpedienteId(null);
+    setVista("llamar");
+  }
+
   // Para cuentas nuevas y vacías: precarga la misma cartera de ejemplo de la Fase 1,
   // ya guardada de verdad en la base de datos del agente autenticado.
   async function cargarDatosDemo() {
@@ -421,6 +509,9 @@ export function AppDataProvider({ children }) {
     else if (key === "kyc") setCrearKycAbierto(true);
     else if (key === "contactos-todos") setVista("contactos");
     else if (key === "propiedades-ver") setVista("propiedades");
+    else if (key === "prospeccion") abrirLlamar(null);
+    else if (key === "importar") setImportarAbierto(true);
+    else if (key === "captacion-ver") setVista("captacion");
     else if (key === "llamar" || key === "whatsapp" || key === "email") setContactarTipo(key);
   }
 
@@ -474,7 +565,9 @@ export function AppDataProvider({ children }) {
   const value = {
     vista, setVista,
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil, actualizarMeta,
-    contactos, oportunidades, actividades, captaciones, requerimientos, kyc,
+    contactos, oportunidades, actividades, captaciones, requerimientos, kyc, interacciones,
+    registrarLlamada, importarContactos, abrirLlamar, llamarA, setLlamarA, filtroContactos, setFiltroContactos,
+    importarAbierto, setImportarAbierto,
     equipo, oficinaCartera, directorioOficina, propiedadesOficina,
     contactoNombre, nombreAgente, registrarContacto, agregarNota,
     crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad,

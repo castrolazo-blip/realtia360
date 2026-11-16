@@ -148,6 +148,10 @@ crea una oficina nueva si es la primera vez que se usa ese nombre — quien la c
 como su broker; quien se suma después, como asesor. Es una heurística simple por nombre de
 oficina, sin flujo de invitación todavía; suficiente para esta fase de pruebas.
 
+> **Actualizado (noviembre 2026):** el Broker ya no lee la cartera de sus asesores, solo
+> números — ver "Privacidad del Broker: solo números" más abajo. Lo que sigue describe el
+> diseño original.
+
 Un Broker ve, **solo en modo lectura**, la cartera de todos los agentes de su oficina —
 nunca puede editarla ni borrarla, y jamás ve la de una oficina distinta a la suya. Esto lo
 resuelve el RLS de Postgres, no el frontend: hay una política adicional de `SELECT` por
@@ -167,8 +171,8 @@ Un Broker no ve el menú de un asesor — vería su propia cartera personal, no 
 oficina. `config/nav.js` define dos navegaciones separadas (`NAV_ASESOR` / `NAV_BROKER`),
 y `DesktopShell`/`MobileShell` eligen una u otra según `agency.rol`:
 
-- **Asesor**: Inicio, Contactos, Oportunidades, Captación, Propiedades, Requerimientos,
-  Agenda — su cartera personal.
+- **Asesor**: Inicio (círculo virtuoso), Llamar, Contactos, Oportunidades, Captación,
+  Propiedades, Requerimientos, Cumplimiento, Agenda — su cartera personal.
 - **Broker**: Inicio (Office Pulse), Agentes, Producción, Proyecciones, Propiedades,
   Administración — la oficina completa. Ninguno de estos módulos deja escribir en la
   cartera de un agente, solo leerla (el mismo RLS de arriba).
@@ -274,6 +278,58 @@ todavía, ningún módulo sube archivos aún) y una función nueva similar a
 `generar-descripcion` pero con lectura de PDF. Evaluación de riesgo por oficina completa
 (hoy Office Pulse solo alerta cuántos expedientes de riesgo alto quedan pendientes, no hay
 un dashboard de cumplimiento dedicado para el Broker).
+
+## Productividad: círculo virtuoso y modo Llamar
+
+Integración de la app "Productividad" (gestión diaria del asesor), adaptada a lo que Realtia
+ya tenía. Principio de diseño: **todo con botones, digitar lo mínimo** — el asesor solo
+escribe si quiere dejar un comentario (y puede dictarlo con el micrófono del teclado).
+
+- **Inicio del asesor = círculo virtuoso** (`components/shared/CirculoVirtuoso.jsx`): las 4
+  etapas de cada negocio en un anillo — 1. Búsqueda, 2. Captación formal, 3. Negociación,
+  4. Cierre — bajo el lema *"lo que está vacío, no produce"*. Se calcula con lo que ya existe
+  (`features/llamar/gestion.js → calcularCirculo`), sin tablas nuevas: Búsqueda = contactos
+  que quieren vender/dar en alquiler o comprar/alquilar + requerimientos activos +
+  oportunidades recién abiertas; Captación = captaciones en proceso o publicadas y
+  disponibles; Negociación = oportunidades en visitas o negociación; Cierre = oportunidades
+  en cierre. Cada etapa lleva a su módulo; si está vacía, lleva a la acción que la llena.
+  Arriba: "Iniciar prospección" (con el tamaño de la cola) e indicadores del día (intentos,
+  contactos efectivos y citas contra su meta diaria).
+- **Llamar** (`features/llamar/Llamar.jsx`): cola automática — llamadas vencidas, las de hoy
+  y contactos sin gestión (los más antiguos primero). Por cada contacto: botón de llamada o
+  WhatsApp, cómo salió (6 botones), próxima fecha (mañana / 3 / 7 / 30 días / elegir),
+  "Agendé una cita" con hora, qué quiere hacer el contacto y su estado. "Guardar y siguiente"
+  registra la llamada, da por hechas las llamadas pendientes de ese contacto y agenda la
+  próxima en la Agenda (llamada o cita) sin escribir nada.
+- **Contactos**: nuevo modo de filtro "📞 Gestión" (Búsqueda, prospectos, compradores, sin
+  gestión, en seguimiento, con próxima acción, futuro, no interesados, no contactar),
+  búsqueda por teléfono, y en la ficha: botón "Llamar y registrar resultado", estado de
+  gestión y objetivos con un toque, y las últimas llamadas.
+- **Importar contactos** (`features/contactos/ImportarContactosModal.jsx`): Excel, CSV o .vcf
+  del teléfono. Normaliza teléfonos a +503, omite repetidos por teléfono y no guarda nada
+  hasta confirmar. Los importados entran como "Sin gestión" a la cola de Llamar. El lector
+  de Excel se descarga de cdnjs solo la primera vez que alguien importa un .xlsx.
+- **Barra móvil del asesor**: Inicio · Llamar · Contactos · Oportunidades · Agenda.
+  Captación se abre desde la etapa 2 del círculo o desde los accesos rápidos.
+
+**Base de datos** (`supabase/migrations/20261116090000_gestion_llamadas.sql`): columnas
+`estado_gestion`, `objetivos`, `origen`, `numero_incorrecto` y `ultima_gestion` en
+`realtia_contactos` (el estado de gestión es distinto de la `clasificacion`, que describe la
+relación), y tabla nueva `realtia_interacciones` (una fila por llamada o WhatsApp, privada
+del agente).
+
+**Privacidad del Broker: solo números.** La misma migración elimina las políticas que le
+dejaban leer la cartera de sus asesores (contactos, oportunidades, captaciones no
+publicadas, actividades, requerimientos y KYC). En su lugar, `realtia_metricas_oficina()`
+devuelve únicamente estados, montos y fechas — nunca nombres, teléfonos, notas ni títulos de
+actividades — y solo si quien la llama es Broker de esa oficina. Office Pulse suma la
+gestión de llamadas de la semana por asesor; el detalle de cada asesor muestra conteos por
+tipo de actividad en vez de la lista de citas.
+
+**Pendiente de esta integración (fases siguientes):** bloques fijos de agenda con agenda
+sugerida, metas semanales/mensuales con proyección y cuello de botella, comisión cobrada al
+cerrar, ranking de asesores y conversiones en Office Pulse, y el Coach con IA (plan de 7
+días, depende de `ANTHROPIC_API_KEY`).
 
 ## Comercialización por planes
 

@@ -23,8 +23,11 @@ import { Administracion } from "./features/administracion/Administracion.jsx";
 import { Kyc } from "./features/kyc/Kyc.jsx";
 import { CrearKycModal } from "./features/kyc/CrearKycModal.jsx";
 import { ContactarModal } from "./components/shared/ContactarModal.jsx";
+import { Llamar } from "./features/llamar/Llamar.jsx";
+import { ImportarContactosModal } from "./features/contactos/ImportarContactosModal.jsx";
 
 const VISTAS = {
+  llamar: Llamar,
   contactos: Contactos,
   oportunidades: Oportunidades,
   captacion: Captacion,
@@ -81,6 +84,7 @@ function GlobalModals() {
       <CrearKycModal open={crearKycAbierto} onClose={() => setCrearKycAbierto(false)} contactos={contactos} onCrear={crearKyc} />
       <ContactarModal tipo={contactarTipo} onClose={() => setContactarTipo(null)} contactos={contactos} onRegistrar={registrarContacto} />
       <DetalleContactoModal />
+      <ImportarContactosModal />
     </>
   );
 }

@@ -5,10 +5,10 @@ import { Icon } from "../../components/icons/Icon.jsx";
 import { formatMoney } from "../../lib/format.js";
 import { calcularResumenPorAgente, calcularTotalesOficina } from "../agentes/resumenOficina.js";
 
-// Vista de inicio del Broker: en vez de su propia cartera, ve cómo está el equipo. Los
-// datos vienen de `oficinaCartera` (AppDataContext), que el RLS de Supabase solo llena
-// para un perfil con rol 'broker' — este componente no filtra nada por seguridad, ya lo
-// hizo la base de datos; aquí solo se agrupa y se muestra. El detalle por asesor vive en
+// Vista de inicio del Broker: en vez de su propia cartera, ve cómo está el equipo — solo
+// números. Los datos vienen de `oficinaCartera` (AppDataContext), que llena la función
+// realtia_metricas_oficina únicamente para un perfil con rol 'broker' y sin ningún dato
+// que identifique a los clientes de cada asesor. El detalle por asesor vive en
 // Agentes — acá solo el resumen ejecutivo.
 export function OfficePulse() {
   const { agency, equipo, oficinaCartera, setVista } = useAppData();
@@ -26,6 +26,12 @@ export function OfficePulse() {
         <StatTile label="Oportunidades activas" valor={totales.oportunidadesActivas} icono={Icon.Target} />
         <StatTile label="Captaciones publicadas" valor={`${totales.captacionesPublicadas}/${totales.captaciones}`} icono={Icon.Clipboard} />
         <StatTile label="Cierres" valor={totales.cierres} icono={Icon.Crown} destacado={totales.cierres > 0} />
+      </div>
+
+      <div className="mb-6 grid grid-cols-3 gap-3 lg:gap-4">
+        <StatTile label="Llamadas esta semana" valor={totales.intentosSemana} icono={Icon.Phone} />
+        <StatTile label="Contactos efectivos" valor={totales.efectivosSemana} icono={Icon.Check} />
+        <StatTile label="Citas agendadas" valor={totales.citasSemana} icono={Icon.Calendar} destacado={totales.citasSemana > 0} />
       </div>
 
       <div className="mb-6 rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-brand-900 p-6 text-white shadow-premium lg:p-8">
@@ -57,10 +63,11 @@ export function OfficePulse() {
         <EmptyState title="Todavía no hay asesores en tu oficina" hint="En cuanto alguien se registre con el mismo nombre de oficina, aparecerá aquí." />
       ) : (
         <div className="overflow-x-auto rounded-3xl border border-ink-900/5 bg-white shadow-card">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="w-full min-w-[860px] text-left text-sm">
             <thead>
               <tr className="border-b border-black/5 text-xs font-semibold uppercase tracking-wide text-black/40">
                 <th className="px-4 py-3">Asesor</th>
+                <th className="px-4 py-3">Llamadas sem.</th>
                 <th className="px-4 py-3">Contactos</th>
                 <th className="px-4 py-3">Oportunidades</th>
                 <th className="px-4 py-3">Captaciones</th>
@@ -76,6 +83,7 @@ export function OfficePulse() {
                     {a.nombre}
                     {a.esBroker && <span className="ml-2 rounded-full bg-gold-100 px-2 py-0.5 text-[11px] font-semibold text-gold-700">Broker</span>}
                   </td>
+                  <td className="px-4 py-3 tabular-nums">{a.intentosSemana} <span className="text-xs text-black/40">({a.efectivosSemana} ef. · {a.citasSemana} citas)</span></td>
                   <td className="px-4 py-3 tabular-nums">{a.contactos}</td>
                   <td className="px-4 py-3 tabular-nums">{a.oportunidadesActivas}</td>
                   <td className="px-4 py-3 tabular-nums">{a.captacionesPublicadas}/{a.captaciones}</td>

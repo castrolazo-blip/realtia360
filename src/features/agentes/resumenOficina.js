@@ -2,8 +2,11 @@
 // vienen de Supabase) por agente. Un solo lugar para este cálculo — lo usan tanto Office
 // Pulse (resumen compacto) como Agentes (detalle por asesor), para no mantener dos
 // versiones de la misma cuenta.
+import { inicioDeSemana } from "../llamar/gestion.js";
+
 export function calcularResumenPorAgente(equipo, oficinaCartera) {
   const ahora = new Date();
+  const semana = inicioDeSemana();
   const mapa = new Map(
     equipo.map((p) => [
       p.id,
@@ -19,6 +22,9 @@ export function calcularResumenPorAgente(equipo, oficinaCartera) {
         captacionesPublicadas: 0,
         actividadesPendientes: 0,
         actividadesVencidas: 0,
+        intentosSemana: 0,
+        efectivosSemana: 0,
+        citasSemana: 0,
       },
     ])
   );
@@ -46,6 +52,14 @@ export function calcularResumenPorAgente(equipo, oficinaCartera) {
     if (new Date(a.fecha_hora) < ahora) f.actividadesVencidas++;
   }
 
+  for (const i of oficinaCartera.interacciones || []) {
+    const f = mapa.get(i.agente_id);
+    if (!f || new Date(i.created_at) < semana) continue;
+    f.intentosSemana++;
+    if (i.efectivo) f.efectivosSemana++;
+    if (i.cita) f.citasSemana++;
+  }
+
   return [...mapa.values()].sort((a, b) => b.valorCerrado - a.valorCerrado || b.contactos - a.contactos);
 }
 
@@ -60,7 +74,10 @@ export function calcularTotalesOficina(porAgente) {
       captacionesPublicadas: t.captacionesPublicadas + a.captacionesPublicadas,
       actividadesPendientes: t.actividadesPendientes + a.actividadesPendientes,
       actividadesVencidas: t.actividadesVencidas + a.actividadesVencidas,
+      intentosSemana: t.intentosSemana + a.intentosSemana,
+      efectivosSemana: t.efectivosSemana + a.efectivosSemana,
+      citasSemana: t.citasSemana + a.citasSemana,
     }),
-    { contactos: 0, oportunidadesActivas: 0, cierres: 0, valorCerrado: 0, captaciones: 0, captacionesPublicadas: 0, actividadesPendientes: 0, actividadesVencidas: 0 }
+    { intentosSemana: 0, efectivosSemana: 0, citasSemana: 0, contactos: 0, oportunidadesActivas: 0, cierres: 0, valorCerrado: 0, captaciones: 0, captacionesPublicadas: 0, actividadesPendientes: 0, actividadesVencidas: 0 }
   );
 }

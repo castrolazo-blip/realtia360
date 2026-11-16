@@ -12,13 +12,39 @@ import { generarSugerencias } from "./sugerencias.js";
 import { calcularNegocio, metaConfigurada, generarAccionesCoach } from "./negocio.js";
 import { ConfigurarMetaModal } from "./ConfigurarMetaModal.jsx";
 import { formatMoney } from "../../lib/format.js";
+import { CirculoVirtuoso } from "../../components/shared/CirculoVirtuoso.jsx";
+import { armarCola, calcularCirculo, indicadoresGestion } from "../llamar/gestion.js";
+import { METAS_DIA } from "../../constants/gestion.js";
+
+const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 export function Inicio() {
   const {
-    contactos, oportunidades, actividades, captaciones, contactoNombre, agency,
+    contactos, oportunidades, actividades, captaciones, requerimientos, interacciones, contactoNombre, agency,
     completarActividad, reprogramarActividad, cancelarActividad, cargarDatosDemo,
-    setVista, manejarAccionRapida, registrarContacto, abrirExpediente,
+    setVista, manejarAccionRapida, registrarContacto, abrirExpediente, abrirLlamar, setFiltroContactos,
   } = useAppData();
+
+  const cola = useMemo(() => armarCola(contactos, actividades), [contactos, actividades]);
+  const hoy = useMemo(() => indicadoresGestion(interacciones), [interacciones]);
+  const circulo = useMemo(
+    () => calcularCirculo({ contactos, requerimientos, captaciones, oportunidades }),
+    [contactos, requerimientos, captaciones, oportunidades]
+  );
+
+  // Cada etapa del círculo lleva a donde se trabaja. Si la etapa está vacía, lleva a
+  // la acción que la llena.
+  function irAEtapa(key) {
+    const etapa = circulo.find((e) => e.key === key);
+    const vacia = etapa?.total === 0;
+    if (key === "busqueda") {
+      if (vacia) abrirLlamar(null);
+      else { setFiltroContactos("busqueda"); setVista("contactos"); }
+    } else if (key === "captacion") {
+      if (vacia) { setFiltroContactos("prospectos"); setVista("contactos"); }
+      else setVista("captacion");
+    } else setVista("oportunidades");
+  }
 
   const [enFoco, setEnFoco] = useState(null);
   const [accion, setAccion] = useState(null);
@@ -86,6 +112,39 @@ export function Inicio() {
       </div>
 
       <div className="px-4 py-5 lg:px-0 lg:py-0">
+        {/* Mi día + círculo virtuoso: el centro de trabajo del asesor */}
+        <div className="mb-6 lg:grid lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-black/45">
+              {DIAS[new Date().getDay()]} {new Date().toLocaleDateString("es-SV", { day: "numeric", month: "long" })}
+            </p>
+            <h1 className="mb-4 font-display text-2xl font-semibold text-ink-950 lg:text-3xl">Hola, {agency.nombreAgente.split(" ")[0]}</h1>
+            <button
+              onClick={() => abrirLlamar(null)}
+              className="mb-4 flex min-h-[72px] w-full items-center gap-4 rounded-3xl bg-gradient-to-br from-brand-700 to-brand-900 px-5 py-4 text-left text-white shadow-premium transition hover:-translate-y-0.5"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15"><Icon.Phone className="h-6 w-6" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-lg font-semibold">Iniciar prospección</span>
+                <span className="block text-sm text-white/70">{cola.length} {cola.length === 1 ? "contacto" : "contactos"} en cola</span>
+              </span>
+              <Icon.Chevron className="h-5 w-5 shrink-0 text-white/60" />
+            </button>
+            <div className="mb-6 grid grid-cols-3 gap-2 lg:mb-0">
+              <KpiDia label="Intentos hoy" valor={hoy.intentos} meta={METAS_DIA.intentos} />
+              <KpiDia label="Efectivos" valor={hoy.efectivos} meta={METAS_DIA.efectivos} />
+              <KpiDia label="Citas" valor={hoy.citas} meta={METAS_DIA.citas} />
+            </div>
+          </div>
+          <Card className="p-4 lg:p-6">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="font-display text-base font-semibold text-ink-950">Tu círculo virtuoso</h2>
+              <span className="text-xs text-black/40">Así avanza cada negocio</span>
+            </div>
+            <CirculoVirtuoso etapas={circulo} onEtapa={irAEtapa} onCentro={() => abrirLlamar(null)} />
+          </Card>
+        </div>
+
         {/* Tu meta — el corazón de Realtia Coach: no solo organiza, dice hacia dónde vas */}
         {negocio ? (
           <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-brand-900 p-6 text-white shadow-premium lg:p-8">
@@ -293,6 +352,19 @@ export function Inicio() {
       />
       <PerfilModal open={perfilAbierto} onClose={() => setPerfilAbierto(false)} />
       <ConfigurarMetaModal open={metaAbierta} onClose={() => setMetaAbierta(false)} />
+    </div>
+  );
+}
+
+function KpiDia({ label, valor, meta }) {
+  const pct = meta ? Math.min(100, Math.round((valor / meta) * 100)) : 0;
+  return (
+    <div className="rounded-2xl border border-black/5 bg-white p-3 shadow-sm">
+      <p className="text-[11px] font-medium text-black/45">{label}</p>
+      <p className="font-display text-2xl font-semibold text-ink-950">{valor}<span className="text-sm text-black/35"> / {meta}</span></p>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
+        <div className={`h-full rounded-full ${pct >= 100 ? "bg-brand-600" : pct >= 60 ? "bg-gold-500" : "bg-rose-400"}`} style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }

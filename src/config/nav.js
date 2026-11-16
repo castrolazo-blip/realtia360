@@ -3,6 +3,7 @@ import { Icon } from "../components/icons/Icon.jsx";
 // Navegación de un asesor: su cartera personal de trabajo diario.
 export const NAV_ASESOR = [
   { key: "inicio", label: "Inicio", icon: Icon.Home },
+  { key: "llamar", label: "Llamar", icon: Icon.Phone },
   { key: "contactos", label: "Contactos", icon: Icon.Users },
   { key: "oportunidades", label: "Oportunidades", icon: Icon.Target },
   { key: "captacion", label: "Captación", icon: Icon.Clipboard },
@@ -38,11 +39,17 @@ export const ACCIONES_RAPIDAS = [
   { key: "propiedades-ver", label: "Ver\npropiedades", icon: Icon.Building, accent: "bg-gray-100 text-gray-600" },
   { key: "kyc", label: "Nuevo\nKYC", icon: Icon.Shield, accent: "bg-rose-50 text-rose-700" },
   { key: "contactos-todos", label: "Ver\ncontactos", icon: Icon.Search, accent: "bg-gray-100 text-gray-600" },
+  { key: "importar", label: "Importar\ncontactos", icon: Icon.File, accent: "bg-sky-50 text-sky-700" },
+  { key: "captacion-ver", label: "Ver\ncaptaciones", icon: Icon.Clipboard, accent: "bg-gray-100 text-gray-600" },
 ];
 
 // El móvil no muestra los 8 módulos del asesor en la barra inferior (ver README) —
 // Propiedades, Requerimientos y Cumplimiento siguen a un toque de distancia desde los
 // accesos rápidos de Inicio. El Broker tiene solo 6 módulos en total, así que sí caben todos.
-export const NAV_MOVIL_ASESOR = NAV_ASESOR.filter((item) => item.key !== "propiedades" && item.key !== "requerimientos" && item.key !== "kyc");
+// Barra móvil del asesor: el centro es el círculo virtuoso (Inicio) y la prospección
+// diaria (Llamar). Captación se abre desde la etapa 2 del círculo o desde los accesos
+// rápidos de Inicio.
+const MOVIL_ASESOR = ["inicio", "llamar", "contactos", "oportunidades", "agenda"];
+export const NAV_MOVIL_ASESOR = NAV_ASESOR.filter((item) => MOVIL_ASESOR.includes(item.key));
 export const NAV_MOVIL = NAV_MOVIL_ASESOR;
 export const NAV_MOVIL_BROKER = NAV_BROKER;

@@ -83,8 +83,8 @@ export function Produccion() {
               </tr>
             </thead>
             <tbody>
-              {delMes.map((o) => (
-                <tr key={o.id} className="border-b border-black/5 last:border-0">
+              {delMes.map((o, i) => (
+                <tr key={`${o.agente_id}-${o.cerrada_en}-${i}`} className="border-b border-black/5 last:border-0">
                   <td className="px-4 py-3 font-medium text-ink-950">{nombreAgente(o.agente_id)}</td>
                   <td className="px-4 py-3 text-black/55">Ganada</td>
                   <td className="px-4 py-3 tabular-nums text-black/55">{new Date(o.cerrada_en).toLocaleDateString("es-SV", { day: "numeric", month: "short" })}</td>

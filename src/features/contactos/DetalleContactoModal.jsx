@@ -7,9 +7,10 @@ import { diasDesde, haceTiempo, formatCumple } from "../../lib/dates.js";
 import { guardarEnContactosDelCelular } from "../../lib/contacts.js";
 import { ContactoQuickButtons } from "../../components/shared/ContactoQuickButtons.jsx";
 import { CrearContactoModal } from "./CrearContactoModal.jsx";
+import { ESTADOS_GESTION, ESTADO_GESTION_LABEL, OBJETIVOS, OBJETIVO_LABEL, RESULTADO_LABEL } from "../../constants/gestion.js";
 
 export function DetalleContactoModal() {
-  const { expedienteId: id, contactos, oportunidades, actividades, cerrarExpediente, registrarContacto, agregarNota, actualizarContacto, agency } = useAppData();
+  const { expedienteId: id, contactos, oportunidades, actividades, interacciones, cerrarExpediente, registrarContacto, agregarNota, actualizarContacto, abrirLlamar, agency } = useAppData();
   const [notaNueva, setNotaNueva] = useState("");
   const [editando, setEditando] = useState(false);
   const c = contactos.find((x) => x.id === id);
@@ -18,6 +19,9 @@ export function DetalleContactoModal() {
   const ops = oportunidades.filter((o) => o.contactoId === id);
   const acts = actividades.filter((a) => a.contactoId === id);
   const notas = c.notas || [];
+  const llamadas = interacciones.filter((i) => i.contactoId === id).slice(0, 10);
+  const objetivos = c.objetivos || [];
+  const alternarObjetivo = (o) => actualizarContacto(c.id, { objetivos: objetivos.includes(o) ? objetivos.filter((x) => x !== o) : [...objetivos, o] });
 
   function guardarNota() {
     if (!notaNueva.trim()) return;
@@ -50,6 +54,52 @@ export function DetalleContactoModal() {
         >
           📇 Guardar en contactos de mi celular
         </button>
+
+        {/* Prospección: todo con un toque */}
+        <div className="rounded-2xl border border-brand-700/20 bg-brand-50/40 p-3.5">
+          {c.telefono && (
+            <button onClick={() => abrirLlamar(c.id)} className="mb-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-brand-700 text-base font-semibold text-white">
+              📞 Llamar y registrar resultado
+            </button>
+          )}
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/45">Estado de gestión</p>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {ESTADOS_GESTION.map((e) => (
+              <button
+                key={e}
+                onClick={() => actualizarContacto(c.id, { estadoGestion: e })}
+                className={`min-h-[40px] rounded-full px-3 text-xs font-semibold ${c.estadoGestion === e ? "bg-brand-700 text-white" : "border border-black/10 bg-white text-black/60"}`}
+              >
+                {ESTADO_GESTION_LABEL[e]}
+              </button>
+            ))}
+          </div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/45">Qué quiere hacer</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {OBJETIVOS.map((o) => (
+              <button
+                key={o}
+                onClick={() => alternarObjetivo(o)}
+                className={`min-h-[44px] rounded-xl border-2 text-sm font-semibold ${objetivos.includes(o) ? "border-brand-700 bg-brand-50 text-brand-800" : "border-gray-200 bg-white text-gray-700"}`}
+              >
+                {OBJETIVO_LABEL[o]}
+              </button>
+            ))}
+          </div>
+          {llamadas.length > 0 && (
+            <>
+              <p className="mb-1.5 mt-3 text-xs font-semibold uppercase tracking-wide text-black/45">Últimas llamadas</p>
+              <div className="flex flex-col gap-1">
+                {llamadas.map((i) => (
+                  <div key={i.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate text-gray-800">{i.canal === "whatsapp" ? "💬" : "📞"} {i.resultado === "otro" ? i.resultadoTexto : RESULTADO_LABEL[i.resultado]}{i.cita ? " · cita" : ""}</span>
+                    <span className="shrink-0 text-xs text-black/40">{haceTiempo(i.creadoEn)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Acciones de contacto — solo aquí adentro, con el expediente ya confirmado */}
         <div className="rounded-xl border border-black/10 p-3">

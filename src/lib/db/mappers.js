@@ -21,6 +21,12 @@ export function contactoFromRow(row) {
     valorEstrategico: row.valor_estrategico,
     intereses: row.intereses,
     notas: row.notas || [],
+    estadoGestion: row.estado_gestion || "sin_gestion",
+    objetivos: row.objetivos || [],
+    origen: row.origen,
+    numeroIncorrecto: !!row.numero_incorrecto,
+    ultimaGestion: row.ultima_gestion,
+    creadoEn: row.created_at,
   };
 }
 export function contactoToRow(c) {
@@ -40,6 +46,26 @@ export function contactoToRow(c) {
     valor_estrategico: c.valorEstrategico ?? "estandar",
     intereses: c.intereses ?? null,
     notas: c.notas ?? [],
+    estado_gestion: c.estadoGestion ?? "sin_gestion",
+    objetivos: c.objetivos ?? [],
+    origen: c.origen ?? null,
+    numero_incorrecto: !!c.numeroIncorrecto,
+    ultima_gestion: c.ultimaGestion ?? null,
+  };
+}
+
+export function interaccionFromRow(row) {
+  return {
+    id: row.id,
+    contactoId: row.contacto_id,
+    actividadId: row.actividad_id,
+    canal: row.canal,
+    resultado: row.resultado,
+    resultadoTexto: row.resultado_texto,
+    efectivo: !!row.efectivo,
+    cita: !!row.cita,
+    nota: row.nota,
+    creadoEn: row.created_at,
   };
 }
 
