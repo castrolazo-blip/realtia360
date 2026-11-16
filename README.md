@@ -331,6 +331,29 @@ sugerida, metas semanales/mensuales con proyección y cuello de botella, comisi�
 cerrar, ranking de asesores y conversiones en Office Pulse, y el Coach con IA (plan de 7
 días, depende de `ANTHROPIC_API_KEY`).
 
+## Diseño de Propiedades y fotos
+
+Propiedades y su ficha siguen el estilo de una app de propiedades: fondo blanco, tarjetas
+redondeadas con foto grande, categorías por tipo de inmueble en íconos circulares, filtros
+en un botón oscuro, "Recién publicadas" en carrusel y el inventario completo debajo
+(`features/propiedades/Propiedades.jsx`, piezas en `ui.jsx`). La ficha
+(`PropiedadDetalleModal.jsx`) es de pantalla completa: foto principal con galería de
+miniaturas, precio, características (habitaciones, baños, área), descripción con "Leer
+más", amenidades, asesor responsable con WhatsApp y llamada, y "Agendar visita" (día y
+hora con botones, cliente opcional; queda como actividad de tipo visita en la Agenda).
+Favoritas: corazón por propiedad, guardado solo en ese dispositivo.
+
+**Fotos** (`supabase/migrations/20261116100000_fotos_propiedad.sql`): columna `fotos` en
+`realtia_captaciones` (lista ordenada, la primera es la portada) y bucket público de lectura
+`realtia-fotos`; cada agente solo escribe en su carpeta `<agente_id>/…`. Las fotos se reducen
+en el navegador a 1600 px en JPEG antes de subir (`lib/fotos.js`). Se administran
+(agregar desde galería o cámara, elegir portada, quitar) con `GestorFotos` en el detalle de
+la captación y en la ficha de la propiedad cuando es propia. El directorio de la oficina
+ahora incluye el teléfono del asesor para los botones de contacto de la ficha.
+
+**Estilo general:** títulos con la misma letra sin serifa en negrita, fondo blanco, botones
+principales oscuros (`ink-950`) y selección en oscuro; el verde de marca queda como acento.
+
 ## Comercialización por planes
 
 `src/config/plans.js` define Basic / Gold / Premium (con límites de referencia) y

@@ -152,6 +152,7 @@ export function captacionFromRow(row) {
     espacios: row.espacios || [],
     acm: row.acm || null,
     descripcionIA: row.descripcion_ia || "",
+    fotos: row.fotos || [],
   };
 }
 export function captacionToRow(c) {

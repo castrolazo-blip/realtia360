@@ -15,7 +15,7 @@ export function DesktopShell({ children }) {
   const nav = esBroker ? NAV_BROKER : NAV_ASESOR;
 
   return (
-    <div className="min-h-screen bg-gray-50 pl-72">
+    <div className="min-h-screen bg-white pl-72">
       <aside className="fixed inset-y-0 left-0 z-30 flex w-72 flex-col bg-ink-950 px-6 py-7 text-white">
         <div className="mb-9 flex items-center gap-3 px-1">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 font-display text-lg font-bold text-ink-950">

@@ -8,7 +8,7 @@ export function MobileShell({ children }) {
   const nav = agency.rol === "broker" ? NAV_MOVIL_BROKER : NAV_MOVIL_ASESOR;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-[calc(4.75rem+env(safe-area-inset-bottom))] font-sans text-ink-900">
+    <div className="min-h-screen bg-white pb-[calc(4.75rem+env(safe-area-inset-bottom))] font-sans text-ink-900">
       {children}
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-ink-950/95 backdrop-blur pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.4)]">

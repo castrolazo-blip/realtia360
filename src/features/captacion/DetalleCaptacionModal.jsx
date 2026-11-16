@@ -5,6 +5,7 @@ import { formatMoney } from "../../lib/format.js";
 import { FichaPropiedad } from "./FichaPropiedad.jsx";
 import { AnalisisMercado } from "./AnalisisMercado.jsx";
 import { EditarCaptacionModal } from "./EditarCaptacionModal.jsx";
+import { GestorFotos } from "../../components/shared/GestorFotos.jsx";
 
 export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNombre, onClose, onToggleChecklist, onCambiarEstado, onCambiarDisponibilidad, onAbrirContacto, onGuardarACM, onGuardarDescripcionIA, onGuardarEdicion }) {
   const [error, setError] = useState("");
@@ -34,6 +35,8 @@ export function DetalleCaptacionModal({ id, captaciones, contactos, contactoNomb
             ✏️ Editar
           </button>
         </div>
+
+        <GestorFotos captacion={c} />
 
         <div className="grid grid-cols-2 gap-2.5">
           <button onClick={() => setFichaAbierta(true)} className="flex flex-col items-center justify-center gap-1 rounded-xl bg-brand-700 px-3 py-3 text-center text-sm font-semibold text-white hover:bg-brand-800">

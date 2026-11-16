@@ -15,6 +15,7 @@ import {
 } from "../lib/db/mappers.js";
 import { calcularRiesgo } from "../features/kyc/riesgo.js";
 import { RESULTADOS, HORA_LLAMADA_DEFECTO } from "../constants/gestion.js";
+import { subirFoto, borrarFoto } from "../lib/fotos.js";
 import { CONTACTOS_INICIALES, OPORTUNIDADES_INICIALES, ACTIVIDADES_INICIALES, CAPTACIONES_INICIALES } from "../data/seed.js";
 
 const AppDataContext = createContext(null);
@@ -148,6 +149,7 @@ export function AppDataProvider({ children }) {
   }, [recargarTodo]);
 
   const contactoNombre = (id) => contactos.find((c) => c.id === id)?.nombre || "—";
+  const telefonoAgente = (id) => (id === agenteId ? agency.telefono : directorioOficina.find((p) => p.id === id)?.telefono) || "";
   const nombreAgente = (id) => (id === agenteId ? agency.nombreAgente : directorioOficina.find((p) => p.id === id)?.nombre_agente) || "—";
   const abrirExpediente = (id) => setExpedienteId(id);
   const cerrarExpediente = () => setExpedienteId(null);
@@ -352,6 +354,54 @@ export function AppDataProvider({ children }) {
       console.error("verificarListasKyc", err);
       return { ok: false, error: "No se pudo consultar la lista de sanciones. Intenta de nuevo." };
     }
+  }
+
+  // Fotos de la propiedad: se suben al almacenamiento y la lista ordenada queda en la
+  // captación (la primera es la portada). Solo el agente dueño de la captación puede
+  // cambiarlas — lo impone el RLS del bucket y de la tabla.
+  function reflejarFotos(captacionId, fotos) {
+    const aplicar = (lista) => lista.map((c) => (c.id === captacionId ? { ...c, fotos } : c));
+    setCaptaciones(aplicar);
+    setPropiedadesOficina(aplicar);
+  }
+
+  async function agregarFotos(captacionId, archivos) {
+    const cap = captaciones.find((c) => c.id === captacionId);
+    if (!cap) return { ok: false, error: "Captación no encontrada" };
+    const nuevas = [];
+    try {
+      for (const f of archivos) nuevas.push(await subirFoto(agenteId, captacionId, f));
+    } catch (err) {
+      console.error("agregarFotos", err);
+      if (!nuevas.length) return { ok: false, error: "No se pudo subir la foto. Revisa tu conexión." };
+    }
+    const fotos = [...(cap.fotos || []), ...nuevas];
+    const { error } = await supabase.from("realtia_captaciones").update({ fotos }).eq("id", captacionId);
+    if (error) { console.error("agregarFotos", error); return { ok: false, error: error.message }; }
+    reflejarFotos(captacionId, fotos);
+    return { ok: true, subidas: nuevas.length, total: archivos.length };
+  }
+
+  async function quitarFoto(captacionId, path) {
+    const cap = captaciones.find((c) => c.id === captacionId);
+    if (!cap) return { ok: false };
+    const fotos = (cap.fotos || []).filter((f) => f.path !== path);
+    const { error } = await supabase.from("realtia_captaciones").update({ fotos }).eq("id", captacionId);
+    if (error) { console.error("quitarFoto", error); return { ok: false, error: error.message }; }
+    reflejarFotos(captacionId, fotos);
+    borrarFoto(path).catch((err) => console.error("borrarFoto", err));
+    return { ok: true };
+  }
+
+  async function usarComoPortada(captacionId, path) {
+    const cap = captaciones.find((c) => c.id === captacionId);
+    if (!cap) return;
+    const elegida = (cap.fotos || []).find((f) => f.path === path);
+    if (!elegida) return;
+    const fotos = [elegida, ...cap.fotos.filter((f) => f.path !== path)];
+    const { error } = await supabase.from("realtia_captaciones").update({ fotos }).eq("id", captacionId);
+    if (error) { console.error("usarComoPortada", error); return; }
+    reflejarFotos(captacionId, fotos);
   }
 
   async function guardarACM(captacionId, datos) {
@@ -569,8 +619,9 @@ export function AppDataProvider({ children }) {
     registrarLlamada, importarContactos, abrirLlamar, llamarA, setLlamarA, filtroContactos, setFiltroContactos,
     importarAbierto, setImportarAbierto,
     equipo, oficinaCartera, directorioOficina, propiedadesOficina,
-    contactoNombre, nombreAgente, registrarContacto, agregarNota,
+    contactoNombre, nombreAgente, telefonoAgente, registrarContacto, agregarNota,
     crearContacto, actualizarContacto, crearOportunidad, actualizarOportunidad, agendarSeguimientoOportunidad, cerrarOportunidad,
+    agregarFotos, quitarFoto, usarComoPortada, agenteId,
     crearCaptacion, actualizarCaptacion, toggleChecklistCaptacion, cambiarEstadoCaptacion, cambiarDisponibilidad, crearPropiedadExistente, guardarACM, guardarDescripcionIA,
     crearRequerimiento, actualizarRequerimiento,
     crearKyc, actualizarKyc, verificarListasKyc,

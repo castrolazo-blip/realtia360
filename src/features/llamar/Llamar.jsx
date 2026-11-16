@@ -180,7 +180,7 @@ export function Llamar() {
             key={r.key}
             onClick={() => elegirResultado(r)}
             className={`min-h-[64px] rounded-2xl border-2 border-l-[12px] bg-white px-3 py-3 text-left text-[15px] font-semibold transition ${r.tone} ${
-              llamada.resultado === r.key ? "border-brand-700 bg-brand-50 ring-2 ring-brand-700/20" : "border-gray-200"
+              llamada.resultado === r.key ? "border-ink-950 bg-gray-50 ring-1 ring-ink-950" : "border-gray-200"
             }`}
           >
             {r.label}
@@ -256,7 +256,7 @@ export function Llamar() {
               <button
                 key={e}
                 onClick={() => set({ estado: e })}
-                className={`min-h-[44px] rounded-full px-4 text-sm font-semibold transition ${llamada.estado === e ? "bg-brand-700 text-white" : "border border-black/10 bg-white text-black/60"}`}
+                className={`min-h-[44px] rounded-full px-4 text-sm font-semibold transition ${llamada.estado === e ? "bg-ink-950 text-white" : "border border-black/10 bg-white text-black/60"}`}
               >
                 {ESTADO_GESTION_LABEL[e]}
               </button>
@@ -274,7 +274,7 @@ export function Llamar() {
       <div className="sticky bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-30 mt-2 grid grid-cols-[1fr_1fr_2fr] gap-2 rounded-3xl bg-white/95 p-2 shadow-premium backdrop-blur lg:bottom-4">
         <button onClick={() => { setLlamarA(null); setVista("inicio"); }} className="min-h-[56px] rounded-2xl border-2 border-gray-200 bg-white text-sm font-semibold text-gray-700">Salir</button>
         <button onClick={saltar} className="min-h-[56px] rounded-2xl border-2 border-gray-200 bg-white text-sm font-semibold text-gray-700">Saltar</button>
-        <button onClick={guardar} disabled={!valida || guardando} className="min-h-[56px] rounded-2xl bg-brand-700 text-base font-semibold text-white disabled:opacity-40">
+        <button onClick={guardar} disabled={!valida || guardando} className="min-h-[56px] rounded-2xl bg-ink-950 text-base font-semibold text-white disabled:opacity-40">
           {guardando ? "Guardando…" : "Guardar y siguiente"}
         </button>
       </div>
@@ -303,7 +303,7 @@ function Opcion({ activo, onClick, children, compacto }) {
     <button
       onClick={onClick}
       className={`w-full rounded-2xl border-2 text-center font-semibold transition ${compacto ? "min-h-[52px] px-2 py-2 text-sm" : "min-h-[60px] px-3 py-3 text-[15px]"} ${
-        activo ? "border-brand-700 bg-brand-50 text-brand-800" : "border-gray-200 bg-white text-gray-800"
+        activo ? "border-ink-950 bg-gray-50 text-ink-950 ring-1 ring-ink-950" : "border-gray-200 bg-white text-gray-800"
       }`}
     >
       {children}
