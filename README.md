@@ -363,6 +363,10 @@ hoy cualquier cuenta nueva se crea en `basic` pero puede usar todo sin restricci
 
 ## Pendiente
 
+- **Certificaciones por asesor** (pedido del dueño, a definir): registrar las certificaciones
+  que tiene o va cursando cada agente. El detalle de qué certificaciones son lo va a enviar
+  el dueño; falta decidir dónde se muestran (perfil del asesor, Agentes del Broker) y si
+  llevan vencimiento o constancia adjunta.
 - Control de acceso real por plan (bloquear funciones/límites según Basic, Gold o Premium).
 - Cambiar de plan desde la app (hoy solo se puede editar `plan` directamente en la tabla).
 - Recuperar contraseña / editar perfil desde la UI.
