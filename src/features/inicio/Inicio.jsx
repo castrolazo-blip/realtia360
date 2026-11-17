@@ -14,18 +14,21 @@ import { ConfigurarMetaModal } from "./ConfigurarMetaModal.jsx";
 import { formatMoney } from "../../lib/format.js";
 import { CirculoVirtuoso } from "../../components/shared/CirculoVirtuoso.jsx";
 import { armarCola, calcularCirculo, indicadoresGestion } from "../llamar/gestion.js";
-import { METAS_DIA } from "../../constants/gestion.js";
+import { metasDelDia, calcularMetasPlan } from "../plan/calculos.js";
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 export function Inicio() {
   const {
-    contactos, oportunidades, actividades, captaciones, requerimientos, interacciones, contactoNombre, agency,
+    plan, contactos, oportunidades, actividades, captaciones, requerimientos, interacciones, contactoNombre, agency,
     completarActividad, reprogramarActividad, cancelarActividad, cargarDatosDemo,
     setVista, manejarAccionRapida, registrarContacto, abrirExpediente, abrirLlamar, setFiltroContactos,
   } = useAppData();
 
-  const cola = useMemo(() => armarCola(contactos, actividades), [contactos, actividades]);
+  const cola = useMemo(() => armarCola(contactos, actividades, undefined, plan?.clientesPotenciales), [contactos, actividades, plan]);
+  const METAS_DIA = metasDelDia(plan);
+  const metasPlan = calcularMetasPlan(plan);
+  const cierresPlan = plan ? oportunidades.filter((o) => o.estado === "ganada" && o.cerradaEn && new Date(o.cerradaEn).getFullYear() === plan.anio).length : 0;
   const hoy = useMemo(() => indicadoresGestion(interacciones), [interacciones]);
   const circulo = useMemo(
     () => calcularCirculo({ contactos, requerimientos, captaciones, oportunidades }),
@@ -119,6 +122,26 @@ export function Inicio() {
               {DIAS[new Date().getDay()]} {new Date().toLocaleDateString("es-SV", { day: "numeric", month: "long" })}
             </p>
             <h1 className="mb-4 font-display text-2xl font-semibold text-ink-950 lg:text-3xl">Hola, {agency.nombreAgente.split(" ")[0]}</h1>
+            {plan && (
+              <button onClick={() => setVista("plan")} className="mb-4 block w-full rounded-3xl bg-ink-950 p-5 text-left text-white shadow-premium">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Mi plan {plan.anio}</p>
+                  <span className="text-xs font-semibold text-gold-400">Ver mi plan →</span>
+                </div>
+                {plan.porQue && <p className="mt-1.5 line-clamp-2 text-[15px] font-semibold italic leading-snug">“{plan.porQue}”</p>}
+                {metasPlan && (
+                  <>
+                    <div className="mt-3 flex items-end justify-between text-sm">
+                      <span className="text-white/70">{formatMoney(plan.metaMonetaria)} · {metasPlan.transacciones} transacciones</span>
+                      <span><b className="text-lg text-gold-400">{cierresPlan}</b><span className="text-white/60"> / {metasPlan.transacciones}</span></span>
+                    </div>
+                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10">
+                      <div className="h-full rounded-full bg-gold-500" style={{ width: `${Math.min(100, (cierresPlan / metasPlan.transacciones) * 100)}%` }} />
+                    </div>
+                  </>
+                )}
+              </button>
+            )}
             <button
               onClick={() => abrirLlamar(null)}
               className="mb-4 flex min-h-[72px] w-full items-center gap-4 rounded-3xl bg-gradient-to-br from-brand-700 to-brand-900 px-5 py-4 text-left text-white shadow-premium transition hover:-translate-y-0.5"

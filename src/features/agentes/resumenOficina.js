@@ -3,6 +3,7 @@
 // Pulse (resumen compacto) como Agentes (detalle por asesor), para no mantener dos
 // versiones de la misma cuenta.
 import { inicioDeSemana } from "../llamar/gestion.js";
+import { anioDelPlan } from "../../constants/plan.js";
 
 export function calcularResumenPorAgente(equipo, oficinaCartera) {
   const ahora = new Date();
@@ -25,6 +26,9 @@ export function calcularResumenPorAgente(equipo, oficinaCartera) {
         intentosSemana: 0,
         efectivosSemana: 0,
         citasSemana: 0,
+        planCompleto: false,
+        metaPlan: null,
+        transaccionesPlan: null,
       },
     ])
   );
@@ -60,6 +64,15 @@ export function calcularResumenPorAgente(equipo, oficinaCartera) {
     if (i.cita) f.citasSemana++;
   }
 
+  const anio = anioDelPlan();
+  for (const pl of oficinaCartera.planes || []) {
+    const f = mapa.get(pl.agente_id);
+    if (!f || pl.anio !== anio) continue;
+    f.planCompleto = !!pl.completado;
+    f.metaPlan = pl.meta_monetaria != null ? Number(pl.meta_monetaria) : null;
+    f.transaccionesPlan = pl.meta_monetaria && pl.comision_promedio ? Math.ceil(pl.meta_monetaria / pl.comision_promedio) : null;
+  }
+
   return [...mapa.values()].sort((a, b) => b.valorCerrado - a.valorCerrado || b.contactos - a.contactos);
 }
 
@@ -77,7 +90,9 @@ export function calcularTotalesOficina(porAgente) {
       intentosSemana: t.intentosSemana + a.intentosSemana,
       efectivosSemana: t.efectivosSemana + a.efectivosSemana,
       citasSemana: t.citasSemana + a.citasSemana,
+      planesCompletos: t.planesCompletos + (a.planCompleto ? 1 : 0),
+      metaPlanes: t.metaPlanes + (a.metaPlan || 0),
     }),
-    { intentosSemana: 0, efectivosSemana: 0, citasSemana: 0, contactos: 0, oportunidadesActivas: 0, cierres: 0, valorCerrado: 0, captaciones: 0, captacionesPublicadas: 0, actividadesPendientes: 0, actividadesVencidas: 0 }
+    { planesCompletos: 0, metaPlanes: 0, intentosSemana: 0, efectivosSemana: 0, citasSemana: 0, contactos: 0, oportunidadesActivas: 0, cierres: 0, valorCerrado: 0, captaciones: 0, captacionesPublicadas: 0, actividadesPendientes: 0, actividadesVencidas: 0 }
   );
 }

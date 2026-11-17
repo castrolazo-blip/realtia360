@@ -11,16 +11,18 @@ import {
   requerimientoFromRow, requerimientoToRow,
   kycFromRow, kycToRow,
   interaccionFromRow,
+  planFromRow, planToRow,
   perfilFromRow,
 } from "../lib/db/mappers.js";
 import { calcularRiesgo } from "../features/kyc/riesgo.js";
 import { RESULTADOS, HORA_LLAMADA_DEFECTO } from "../constants/gestion.js";
 import { subirFoto, borrarFoto } from "../lib/fotos.js";
+import { anioDelPlan } from "../constants/plan.js";
 import { CONTACTOS_INICIALES, OPORTUNIDADES_INICIALES, ACTIVIDADES_INICIALES, CAPTACIONES_INICIALES } from "../data/seed.js";
 
 const AppDataContext = createContext(null);
 
-const METRICAS_VACIAS = { contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [], interacciones: [] };
+const METRICAS_VACIAS = { contactos: [], oportunidades: [], captaciones: [], actividades: [], kyc: [], interacciones: [], planes: [] };
 
 // Centraliza la cartera (contactos, oportunidades, actividades, captaciones), el perfil
 // del agente y la navegación de la app. Todo vive en Supabase — este contexto es la
@@ -38,6 +40,8 @@ export function AppDataProvider({ children }) {
   const [requerimientos, setRequerimientos] = useState([]);
   const [kyc, setKyc] = useState([]);
   const [interacciones, setInteracciones] = useState([]);
+  // Plan de negocio del año del plan (obligatorio para el asesor: es la puerta de entrada).
+  const [plan, setPlan] = useState(null);
   // Contacto que se quiere llamar directamente desde su ficha (fuera del orden de la cola).
   const [llamarA, setLlamarA] = useState(null);
   // Filtro con el que se abre Contactos cuando se llega desde el círculo virtuoso.
@@ -73,7 +77,7 @@ export function AppDataProvider({ children }) {
     setCargando(true);
     setErrorCarga("");
     try {
-      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes, requerimientosRes, kycRes, interaccionesRes] = await Promise.all([
+      let [perfilRes, contactosRes, oportunidadesRes, actividadesRes, captacionesRes, requerimientosRes, kycRes, interaccionesRes, planRes] = await Promise.all([
         supabase.from("realtia_perfiles").select("*").eq("id", agenteId).maybeSingle(),
         supabase.from("realtia_contactos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_oportunidades").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
@@ -82,6 +86,7 @@ export function AppDataProvider({ children }) {
         supabase.from("realtia_requerimientos").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_kyc").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }),
         supabase.from("realtia_interacciones").select("*").eq("agente_id", agenteId).order("created_at", { ascending: false }).limit(3000),
+        supabase.from("realtia_planes").select("*").eq("agente_id", agenteId).eq("anio", anioDelPlan()).maybeSingle(),
       ]);
       // Red de seguridad: si por alguna razón el trigger de la base de datos no creó el
       // perfil al registrarse, lo creamos aquí mismo con lo que haya en los metadatos de auth.
@@ -107,6 +112,7 @@ export function AppDataProvider({ children }) {
       setRequerimientos((requerimientosRes.data || []).map(requerimientoFromRow));
       setKyc((kycRes.data || []).map(kycFromRow));
       setInteracciones((interaccionesRes.data || []).map(interaccionFromRow));
+      setPlan(planRes.data ? planFromRow(planRes.data) : null);
 
       // Propiedades: inventario publicado de toda la oficina, y el directorio (id/nombre)
       // de los compañeros para poder mostrar quién es el asesor responsable. Esto es para
@@ -177,8 +183,10 @@ export function AppDataProvider({ children }) {
 
   async function crearContacto(data) {
     const { data: row, error } = await supabase.from("realtia_contactos").insert({ agente_id: agenteId, ...contactoToRow(data) }).select().single();
-    if (error) { console.error("crearContacto", error); return; }
-    setContactos((prev) => [contactoFromRow(row), ...prev]);
+    if (error) { console.error("crearContacto", error); return null; }
+    const nuevo = contactoFromRow(row);
+    setContactos((prev) => [nuevo, ...prev]);
+    return nuevo;
   }
 
   async function actualizarContacto(id, datos) {
@@ -440,6 +448,26 @@ export function AppDataProvider({ children }) {
     setActividades((prev) => prev.map((a) => (a.id === id ? { ...a, estado: "cancelada" } : a)));
   }
 
+  // Guarda el plan (borrador o completo). Al completarlo, la meta del plan pasa a ser la
+  // meta del Coach: meta anual = meta monetaria y el precio promedio se ajusta para que
+  // "cierres necesarios" coincida con las transacciones del plan.
+  async function guardarPlan(datos) {
+    const actual = plan || { anio: anioDelPlan() };
+    const nuevo = { ...actual, ...datos };
+    const { data: row, error } = await supabase
+      .from("realtia_planes")
+      .upsert({ agente_id: agenteId, ...planToRow(nuevo) }, { onConflict: "agente_id,anio" })
+      .select().single();
+    if (error) { console.error("guardarPlan", error); return { ok: false, error: error.message }; }
+    const guardado = planFromRow(row);
+    setPlan(guardado);
+    if (guardado.completadoEn && guardado.metaMonetaria && guardado.comisionPromedio) {
+      const pct = perfil?.comisionPromedioPct || 5;
+      await actualizarMeta({ metaAnual: guardado.metaMonetaria, comisionPromedioPct: pct, precioPromedioVenta: Math.round(guardado.comisionPromedio / (pct / 100)) });
+    }
+    return { ok: true, plan: guardado };
+  }
+
   // Guarda el resultado de una llamada (o WhatsApp) en un solo paso, como "Guardar y
   // siguiente" del modo Llamar: registra la interacción, da por hechas las llamadas
   // pendientes de ese contacto, agenda la próxima (llamada o cita) y actualiza el estado
@@ -616,6 +644,7 @@ export function AppDataProvider({ children }) {
     vista, setVista,
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil, actualizarMeta,
     contactos, oportunidades, actividades, captaciones, requerimientos, kyc, interacciones,
+    plan, guardarPlan,
     registrarLlamada, importarContactos, abrirLlamar, llamarA, setLlamarA, filtroContactos, setFiltroContactos,
     importarAbierto, setImportarAbierto,
     equipo, oficinaCartera, directorioOficina, propiedadesOficina,

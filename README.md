@@ -279,6 +279,38 @@ todavía, ningún módulo sube archivos aún) y una función nueva similar a
 (hoy Office Pulse solo alerta cuántos expedientes de riesgo alto quedan pendientes, no hay
 un dashboard de cumplimiento dedicado para el Broker).
 
+## Plan de negocio anual: la puerta de entrada
+
+Todo en Realtia parte del plan de negocio del asesor (`features/plan`), siguiendo el
+cuaderno "Business Plan" de la oficina. **Es obligatorio:** un asesor sin su plan del año
+firmado ve solo el asistente hasta completarlo (`App.jsx`); se guarda en cada paso y se
+retoma donde quedó. El broker no tiene esta puerta.
+
+Pasos del asistente (`PlanWizard.jsx`): portada ("un sueño escrito se convierte en
+meta…"), compromiso firmado con un toque, Visión, Misión, Valores (botones), mi "¿Por
+qué?", logros del año anterior y metas del año en 5 áreas (negocio, financiero, personal,
+familia, espiritual), metas de negocio y clientes que pueden cerrar este año. Donde hay que
+escribir, se ofrecen frases para tocar y ajustar (o dictar con el teclado).
+
+**Metas de negocio** (`calculos.js`): meta monetaria ÷ comisión promedio = transacciones; de
+ahí el embudo hacia atrás con tasas por defecto (4 de 10 llamadas son contactos efectivos,
+3 de 10 efectivos dan cita, 1 de 10 citas cierra) → citas, efectivos y llamadas por año,
+mes, semana y día. Esas metas del día reemplazan las fijas de "Mi día" y de Llamar; la meta
+monetaria pasa a ser la meta del Coach. Los **clientes que pueden cerrar** entran primero a
+la cola de Llamar si no tienen gestión en 7 días.
+
+Después: **Mi plan** (`MiPlan.jsx`, en el menú y en la tarjeta superior de Inicio con el
+"¿Por qué?" y el avance en transacciones) muestra el plan completo, cada sección se edita
+con un toque y se puede imprimir. El año del plan es el siguiente a partir de octubre.
+
+**Base de datos** (`supabase/migrations/20261117090000_plan_anual.sql`): tabla
+`realtia_planes` (una por asesor y año, privada) y `realtia_metricas_oficina()` suma los
+planes **solo en números** (si está firmado, meta y comisión promedio). Office Pulse muestra
+cuántos asesores firmaron su plan, la suma de metas y una columna "Plan" por asesor.
+
+**Pendiente:** "Plan de trabajo" y "Plan de marketing" del cuaderno (faltan esas páginas) y
+que el broker pueda ajustar las tasas de conversión de su oficina.
+
 ## Productividad: círculo virtuoso y modo Llamar
 
 Integración de la app "Productividad" (gestión diaria del asesor), adaptada a lo que Realtia

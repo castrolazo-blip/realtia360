@@ -4,6 +4,7 @@ import { Card, EmptyState, SectionHeader, StatTile } from "../../components/ui/i
 import { Icon } from "../../components/icons/Icon.jsx";
 import { formatMoney } from "../../lib/format.js";
 import { calcularResumenPorAgente, calcularTotalesOficina } from "../agentes/resumenOficina.js";
+import { anioDelPlan } from "../../constants/plan.js";
 
 // Vista de inicio del Broker: en vez de su propia cartera, ve cómo está el equipo — solo
 // números. Los datos vienen de `oficinaCartera` (AppDataContext), que llena la función
@@ -26,6 +27,20 @@ export function OfficePulse() {
         <StatTile label="Oportunidades activas" valor={totales.oportunidadesActivas} icono={Icon.Target} />
         <StatTile label="Captaciones publicadas" valor={`${totales.captacionesPublicadas}/${totales.captaciones}`} icono={Icon.Clipboard} />
         <StatTile label="Cierres" valor={totales.cierres} icono={Icon.Crown} destacado={totales.cierres > 0} />
+      </div>
+
+      <div className="mb-6 rounded-3xl border border-black/[0.06] bg-white p-5 shadow-card">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-black/45">Planes de negocio {anioDelPlan()}</p>
+            <p className="mt-1 text-2xl font-extrabold text-ink-950">{totales.planesCompletos} de {porAgente.filter((a) => !a.esBroker).length} asesores</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-black/45">Suma de metas del equipo</p>
+            <p className="text-xl font-extrabold text-ink-950">{formatMoney(totales.metaPlanes)}</p>
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-black/40">Solo la meta y si está firmado: la visión, valores y metas personales de cada asesor son privadas.</p>
       </div>
 
       <div className="mb-6 grid grid-cols-3 gap-3 lg:gap-4">
@@ -63,10 +78,11 @@ export function OfficePulse() {
         <EmptyState title="Todavía no hay asesores en tu oficina" hint="En cuanto alguien se registre con el mismo nombre de oficina, aparecerá aquí." />
       ) : (
         <div className="overflow-x-auto rounded-3xl border border-ink-900/5 bg-white shadow-card">
-          <table className="w-full min-w-[860px] text-left text-sm">
+          <table className="w-full min-w-[1000px] text-left text-sm">
             <thead>
               <tr className="border-b border-black/5 text-xs font-semibold uppercase tracking-wide text-black/40">
                 <th className="px-4 py-3">Asesor</th>
+                <th className="px-4 py-3">Plan</th>
                 <th className="px-4 py-3">Llamadas sem.</th>
                 <th className="px-4 py-3">Contactos</th>
                 <th className="px-4 py-3">Oportunidades</th>
@@ -82,6 +98,9 @@ export function OfficePulse() {
                   <td className="px-4 py-3 font-medium text-ink-950">
                     {a.nombre}
                     {a.esBroker && <span className="ml-2 rounded-full bg-gold-100 px-2 py-0.5 text-[11px] font-semibold text-gold-700">Broker</span>}
+                  </td>
+                  <td className="px-4 py-3 tabular-nums">
+                    {a.esBroker ? "—" : a.planCompleto ? <span className="font-semibold text-brand-700">✓ {formatMoney(a.metaPlan)} · {a.transaccionesPlan} tx</span> : <span className="font-semibold text-rose-600">Pendiente</span>}
                   </td>
                   <td className="px-4 py-3 tabular-nums">{a.intentosSemana} <span className="text-xs text-black/40">({a.efectivosSemana} ef. · {a.citasSemana} citas)</span></td>
                   <td className="px-4 py-3 tabular-nums">{a.contactos}</td>

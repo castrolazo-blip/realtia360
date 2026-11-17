@@ -4,9 +4,10 @@ import { Badge, EmptyState, inputClass } from "../../components/ui/index.js";
 import { Icon } from "../../components/icons/Icon.jsx";
 import {
   RESULTADOS, PROXIMA_OPCIONES, HORAS_CITA, OBJETIVOS, OBJETIVO_LABEL,
-  ESTADOS_GESTION, ESTADO_GESTION_LABEL, ESTADO_GESTION_TONE, RESULTADO_LABEL, METAS_DIA,
+  ESTADOS_GESTION, ESTADO_GESTION_LABEL, ESTADO_GESTION_TONE, RESULTADO_LABEL,
 } from "../../constants/gestion.js";
 import { armarCola, indicadoresGestion, fechaLocal } from "./gestion.js";
+import { metasDelDia } from "../plan/calculos.js";
 import { telHref, waHref } from "../../lib/contacts.js";
 import { formatTelefono, normalizarTelefono } from "../../lib/telefono.js";
 import { formatDia } from "../../lib/dates.js";
@@ -31,13 +32,14 @@ const nuevaLlamada = (contacto, actividadId) => ({
 // WhatsApp), tocas cómo salió, cuándo es la próxima y "Guardar y siguiente". La próxima
 // llamada o cita queda agendada sola.
 export function Llamar() {
-  const { contactos, actividades, interacciones, registrarLlamada, llamarA, setLlamarA, setVista, setCrearContactoAbierto, setImportarAbierto } = useAppData();
+  const { plan, contactos, actividades, interacciones, registrarLlamada, llamarA, setLlamarA, setVista, setCrearContactoAbierto, setImportarAbierto } = useAppData();
   const [saltados, setSaltados] = useState(() => new Set());
   const [llamada, setLlamada] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState("");
 
-  const cola = useMemo(() => armarCola(contactos, actividades, saltados), [contactos, actividades, saltados]);
+  const cola = useMemo(() => armarCola(contactos, actividades, saltados, plan?.clientesPotenciales), [contactos, actividades, saltados, plan]);
+  const METAS_DIA = metasDelDia(plan);
   const hoy = useMemo(() => indicadoresGestion(interacciones), [interacciones]);
 
   const directo = llamarA && contactos.find((c) => c.id === llamarA);

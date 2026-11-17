@@ -268,3 +268,41 @@ export function perfilFromRow(row) {
     rol: row.rol || "asesor",
   };
 }
+
+export function planFromRow(row) {
+  return {
+    id: row.id,
+    anio: row.anio,
+    compromisoEn: row.compromiso_en,
+    vision: row.vision || "",
+    mision: row.mision || "",
+    valores: row.valores || [],
+    porQue: row.por_que || "",
+    logros: row.logros || {},
+    metas: row.metas || {},
+    metaMonetaria: row.meta_monetaria != null ? Number(row.meta_monetaria) : null,
+    comisionPromedio: row.comision_promedio != null ? Number(row.comision_promedio) : null,
+    conversion: row.conversion || null,
+    clientesPotenciales: row.clientes_potenciales || [],
+    paso: row.paso || 0,
+    completadoEn: row.completado_en,
+  };
+}
+export function planToRow(p) {
+  return {
+    anio: p.anio,
+    compromiso_en: p.compromisoEn ?? null,
+    vision: p.vision ?? null,
+    mision: p.mision ?? null,
+    valores: p.valores ?? [],
+    por_que: p.porQue ?? null,
+    logros: p.logros ?? {},
+    metas: p.metas ?? {},
+    meta_monetaria: p.metaMonetaria ?? null,
+    comision_promedio: p.comisionPromedio ?? null,
+    clientes_potenciales: p.clientesPotenciales ?? [],
+    paso: p.paso ?? 0,
+    completado_en: p.completadoEn ?? null,
+    updated_at: new Date().toISOString(),
+  };
+}

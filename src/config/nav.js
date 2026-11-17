@@ -3,6 +3,7 @@ import { Icon } from "../components/icons/Icon.jsx";
 // Navegación de un asesor: su cartera personal de trabajo diario.
 export const NAV_ASESOR = [
   { key: "inicio", label: "Inicio", icon: Icon.Home },
+  { key: "plan", label: "Mi plan", icon: Icon.Target },
   { key: "llamar", label: "Llamar", icon: Icon.Phone },
   { key: "contactos", label: "Contactos", icon: Icon.Users },
   { key: "oportunidades", label: "Oportunidades", icon: Icon.Target },

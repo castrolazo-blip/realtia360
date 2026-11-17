@@ -24,9 +24,12 @@ import { Kyc } from "./features/kyc/Kyc.jsx";
 import { CrearKycModal } from "./features/kyc/CrearKycModal.jsx";
 import { ContactarModal } from "./components/shared/ContactarModal.jsx";
 import { Llamar } from "./features/llamar/Llamar.jsx";
+import { PlanWizard } from "./features/plan/PlanWizard.jsx";
+import { MiPlan } from "./features/plan/MiPlan.jsx";
 import { ImportarContactosModal } from "./features/contactos/ImportarContactosModal.jsx";
 
 const VISTAS = {
+  plan: MiPlan,
   llamar: Llamar,
   contactos: Contactos,
   oportunidades: Oportunidades,
@@ -109,9 +112,12 @@ function PantallaError({ mensaje, onReintentar }) {
 }
 
 function AppCargada() {
-  const { cargando, errorCarga, recargarTodo } = useAppData();
+  const { cargando, errorCarga, recargarTodo, agency, plan, setVista } = useAppData();
   if (cargando) return <PantallaCargando />;
   if (errorCarga) return <PantallaError mensaje={errorCarga} onReintentar={recargarTodo} />;
+  // Todo empieza por el plan de negocio anual: un asesor sin su plan del año firmado no
+  // entra al resto de la app hasta completarlo (se guarda paso a paso y se retoma).
+  if (agency.rol !== "broker" && !plan?.completadoEn) return <PlanWizard alTerminar={() => setVista("inicio")} />;
   return (
     <>
       <AppShell>
