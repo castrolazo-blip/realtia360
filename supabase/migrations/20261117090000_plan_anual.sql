@@ -74,3 +74,10 @@ $$;
 
 revoke execute on function public.realtia_metricas_oficina() from public, anon;
 grant execute on function public.realtia_metricas_oficina() to authenticated;
+
+-- (25 nov 2026) El plan deja de pedir nombres de clientes: en su lugar define cómo se le
+-- dará seguimiento (revisión semanal/mensual e indicadores) y cómo se ordena la agenda
+-- (bloques fijos por día). `clientes_potenciales` queda sin uso.
+alter table public.realtia_planes
+  add column if not exists seguimiento jsonb not null default '{}',
+  add column if not exists agenda jsonb not null default '{}';

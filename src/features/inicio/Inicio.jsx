@@ -15,6 +15,7 @@ import { formatMoney } from "../../lib/format.js";
 import { CirculoVirtuoso } from "../../components/shared/CirculoVirtuoso.jsx";
 import { armarCola, calcularCirculo, indicadoresGestion } from "../llamar/gestion.js";
 import { metasDelDia, calcularMetasPlan } from "../plan/calculos.js";
+import { bloqueActual, tituloBloque, hora12, TIPOS_BLOQUE } from "../plan/agenda.js";
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
@@ -25,8 +26,16 @@ export function Inicio() {
     setVista, manejarAccionRapida, registrarContacto, abrirExpediente, abrirLlamar, setFiltroContactos,
   } = useAppData();
 
-  const cola = useMemo(() => armarCola(contactos, actividades, undefined, plan?.clientesPotenciales), [contactos, actividades, plan]);
+  const cola = useMemo(() => armarCola(contactos, actividades), [contactos, actividades]);
   const METAS_DIA = metasDelDia(plan);
+  const { actual: bloqueAhora, siguiente: bloqueSig } = bloqueActual(plan?.agenda?.bloques);
+  const esDiaRevision = plan?.seguimiento?.dia === new Date().getDay();
+  function irABloque(b) {
+    const accion = (TIPOS_BLOQUE[b.tipo] || {}).accion;
+    if (accion === "llamar") abrirLlamar(null);
+    else if (accion) setVista(accion);
+    else setVista("agenda");
+  }
   const metasPlan = calcularMetasPlan(plan);
   const cierresPlan = plan ? oportunidades.filter((o) => o.estado === "ganada" && o.cerradaEn && new Date(o.cerradaEn).getFullYear() === plan.anio).length : 0;
   const hoy = useMemo(() => indicadoresGestion(interacciones), [interacciones]);
@@ -140,6 +149,20 @@ export function Inicio() {
                     </div>
                   </>
                 )}
+              </button>
+            )}
+            {(bloqueAhora || bloqueSig) && (
+              <button onClick={() => irABloque(bloqueAhora || bloqueSig)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white p-3.5 text-left shadow-card" style={{ borderLeft: `6px solid ${(TIPOS_BLOQUE[(bloqueAhora || bloqueSig).tipo] || TIPOS_BLOQUE.otro).color}` }}>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-black/45">{bloqueAhora ? "Ahora toca" : "Sigue"} · {hora12((bloqueAhora || bloqueSig).ini)} – {hora12((bloqueAhora || bloqueSig).fin)}</span>
+                  <span className="block truncate text-base font-bold text-ink-950">{tituloBloque(bloqueAhora || bloqueSig)}</span>
+                </span>
+                <Icon.Chevron className="h-4 w-4 shrink-0 text-black/30" />
+              </button>
+            )}
+            {esDiaRevision && (
+              <button onClick={() => setVista("plan")} className="mb-3 w-full rounded-2xl bg-gold-50 p-3 text-left text-sm font-semibold text-gold-700">
+                📋 Hoy revisas tu plan a las {hora12(plan.seguimiento.hora || "08:00")} — toca para ver tu avance
               </button>
             )}
             <button

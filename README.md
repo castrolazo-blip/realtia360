@@ -289,19 +289,30 @@ retoma donde quedó. El broker no tiene esta puerta.
 Pasos del asistente (`PlanWizard.jsx`): portada ("un sueño escrito se convierte en
 meta…"), compromiso firmado con un toque, Visión, Misión, Valores (botones), mi "¿Por
 qué?", logros del año anterior y metas del año en 5 áreas (negocio, financiero, personal,
-familia, espiritual), metas de negocio y clientes que pueden cerrar este año. Donde hay que
-escribir, se ofrecen frases para tocar y ajustar (o dictar con el teclado).
+familia, espiritual), metas de negocio, **cómo le daré seguimiento** (revisión semanal: día y
+hora; revisión mensual con el broker; indicadores a medir) y **así ordenaré mi agenda**.
+Donde hay que escribir, se ofrecen frases para tocar y ajustar (o dictar con el teclado).
+El plan es un objetivo anual: no pide nombres de clientes.
+
+**Agenda en bloques** (`agenda.js`): con las metas del plan se arma una semana sugerida
+—redes, prospección (dura lo que piden las llamadas diarias), llamadas de seguimiento,
+citas de captación, recorridos con compradores, reunión de oficina, capacitación,
+administrativo y la revisión del plan a la hora elegida, sin cruces—. Se ajusta con
+toques (días de trabajo, hora de inicio, quitar y agregar bloques, incluidos personales
+como almuerzo o familia). Los bloques aparecen en Inicio ("Ahora toca…", con un toque
+lleva a Llamar, Agenda o Mi plan), en Agenda (pestaña "Mi semana" y en la vista de día) y
+en Mi plan. El día de revisión, Inicio recuerda revisar el plan.
 
 **Metas de negocio** (`calculos.js`): meta monetaria ÷ comisión promedio = transacciones; de
 ahí el embudo hacia atrás con tasas por defecto (4 de 10 llamadas son contactos efectivos,
 3 de 10 efectivos dan cita, 1 de 10 citas cierra) → citas, efectivos y llamadas por año,
 mes, semana y día. Esas metas del día reemplazan las fijas de "Mi día" y de Llamar; la meta
-monetaria pasa a ser la meta del Coach. Los **clientes que pueden cerrar** entran primero a
-la cola de Llamar si no tienen gestión en 7 días.
+monetaria pasa a ser la meta del Coach.
 
 Después: **Mi plan** (`MiPlan.jsx`, en el menú y en la tarjeta superior de Inicio con el
-"¿Por qué?" y el avance en transacciones) muestra el plan completo, cada sección se edita
-con un toque y se puede imprimir. El año del plan es el siguiente a partir de octubre.
+"¿Por qué?" y el avance en transacciones) muestra el plan completo con **Mi seguimiento**
+(lo real de la semana y del mes contra lo que pide el plan, en los indicadores elegidos) y
+**Mi semana**; cada sección se edita con un toque y se puede imprimir. El año del plan es el siguiente a partir de octubre.
 
 **Base de datos** (`supabase/migrations/20261117090000_plan_anual.sql`): tabla
 `realtia_planes` (una por asesor y año, privada) y `realtia_metricas_oficina()` suma los

@@ -20,8 +20,7 @@ export function fechaLocal(offsetDias = 0) {
 //  1. llamadas agendadas vencidas o para hoy;
 //  2. contactos que nunca se han gestionado (los más antiguos primero).
 // Solo entran contactos en ciclo y con teléfono.
-export function armarCola(contactos, actividades, saltados = new Set(), prioritarios = []) {
-  const prioridad = new Set(prioritarios || []);
+export function armarCola(contactos, actividades, saltados = new Set()) {
   const porId = new Map(contactos.map((c) => [c.id, c]));
   const fin = finDeHoy();
   const vistos = new Set();
@@ -40,12 +39,6 @@ export function armarCola(contactos, actividades, saltados = new Set(), priorita
     });
 
   const conPendiente = new Set(pendientes.map((a) => a.contactoId));
-  // Clientes del plan ("pueden cerrar este año") sin llamada agendada y sin gestión en 7
-  // días: van antes que el resto de contactos sin gestionar.
-  const hace7 = Date.now() - 7 * 86400000;
-  contactos
-    .filter((c) => prioridad.has(c.id) && !vistos.has(c.id) && enCiclo(c) && c.telefono && !conPendiente.has(c.id) && (!c.ultimaGestion || new Date(c.ultimaGestion).getTime() < hace7))
-    .forEach((c) => { vistos.add(c.id); cola.push({ contactoId: c.id, actividadId: null, vencida: false, prioritario: true }); });
   contactos
     .filter((c) => !vistos.has(c.id) && enCiclo(c) && c.telefono && !c.ultimaGestion && !conPendiente.has(c.id))
     .sort((a, b) => (a.creadoEn || "").localeCompare(b.creadoEn || ""))

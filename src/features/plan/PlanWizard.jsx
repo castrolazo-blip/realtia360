@@ -4,17 +4,20 @@ import { inputClass } from "../../components/ui/index.js";
 import { AREAS_VIDA, VALORES_SUGERIDOS, FRASES, METAS_MONETARIAS, COMISIONES_PROMEDIO, anioDelPlan } from "../../constants/plan.js";
 import { calcularMetasPlan } from "./calculos.js";
 import { formatMoney } from "../../lib/format.js";
-import { normalizarTelefono } from "../../lib/telefono.js";
+import {
+  TIPOS_BLOQUE, OTRAS_SUGERIDAS, DIAS, DIAS_CORTO, ORDEN_SEMANA, INDICADORES, REVISION_MENSUAL, HORAS_REVISION, SEGUIMIENTO_DEFECTO,
+  generarAgenda, bloquesDelDia, horasPorTipo, tituloBloque, hora12, aMin, deMin, choques, ordenar,
+} from "./agenda.js";
 
-const PASOS = ["portada", "compromiso", "vision", "mision", "valores", "por_que", "logros", "metas", "negocio", "clientes", "firma"];
+export const PASOS = ["portada", "compromiso", "vision", "mision", "valores", "por_que", "logros", "metas", "negocio", "seguimiento", "agenda", "firma"];
 
 // Asistente del Plan de Negocio anual: la puerta de entrada de Realtia. Sigue el cuaderno
 // de la oficina página por página. Guarda en cada paso, así se puede retomar donde quedó.
 // Donde hay que escribir, ofrece frases para tocar y luego ajustar (o dictar por voz).
 export function PlanWizard({ alTerminar, inicial }) {
-  const { plan, guardarPlan, agency, contactos, crearContacto, signOut } = useAppData();
+  const { plan, guardarPlan, agency, signOut } = useAppData();
   const anio = plan?.anio || anioDelPlan();
-  const [paso, setPaso] = useState(() => (inicial != null ? inicial : Math.min(plan?.paso || 0, PASOS.length - 1)));
+  const [paso, setPaso] = useState(() => (inicial != null ? Math.max(0, PASOS.indexOf(inicial)) : Math.min(plan?.paso || 0, PASOS.length - 1)));
   const [d, setD] = useState(() => ({
     vision: plan?.vision || "",
     mision: plan?.mision || "",
@@ -24,7 +27,8 @@ export function PlanWizard({ alTerminar, inicial }) {
     metas: plan?.metas || {},
     metaMonetaria: plan?.metaMonetaria || null,
     comisionPromedio: plan?.comisionPromedio || null,
-    clientesPotenciales: plan?.clientesPotenciales || [],
+    seguimiento: { ...SEGUIMIENTO_DEFECTO, ...(plan?.seguimiento || {}) },
+    agenda: plan?.agenda?.bloques ? plan.agenda : null,
     compromisoEn: plan?.compromisoEn || null,
   }));
   const [guardando, setGuardando] = useState(false);
@@ -44,7 +48,8 @@ export function PlanWizard({ alTerminar, inicial }) {
     logros: true,
     metas: (d.metas.negocio || "").trim().length >= 3,
     negocio: d.metaMonetaria > 0 && d.comisionPromedio > 0,
-    clientes: true,
+    seguimiento: d.seguimiento.dia != null && !!d.seguimiento.hora && d.seguimiento.indicadores.length > 0,
+    agenda: (d.agenda?.bloques || []).length > 0,
     firma: true,
   }[clave];
 
@@ -143,9 +148,9 @@ export function PlanWizard({ alTerminar, inicial }) {
 
           {clave === "negocio" && <MetasNegocio d={d} set={set} anio={anio} />}
 
-          {clave === "clientes" && (
-            <Clientes anio={anio} contactos={contactos} seleccion={d.clientesPotenciales} onChange={(c) => set({ clientesPotenciales: c })} crearContacto={crearContacto} />
-          )}
+          {clave === "seguimiento" && <Seguimiento valor={d.seguimiento} onChange={(seguimiento) => set({ seguimiento })} />}
+
+          {clave === "agenda" && <AgendaPlan d={d} set={set} />}
 
           {clave === "firma" && <Resumen d={d} anio={anio} nombre={agency.nombreAgente} />}
 
@@ -294,58 +299,6 @@ function MetasNegocio({ d, set, anio }) {
   );
 }
 
-function Clientes({ anio, contactos, seleccion, onChange, crearContacto }) {
-  const [q, setQ] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [tel, setTel] = useState("");
-  const [agregando, setAgregando] = useState(false);
-  const filtrados = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    return contactos.filter((c) => !t || c.nombre.toLowerCase().includes(t)).sort((a, b) => Number(seleccion.includes(b.id)) - Number(seleccion.includes(a.id)));
-  }, [contactos, q, seleccion]);
-  const alternar = (id) => onChange(seleccion.includes(id) ? seleccion.filter((x) => x !== id) : [...seleccion, id]);
-
-  async function agregar() {
-    if (nombre.trim().length < 2 || agregando) return;
-    setAgregando(true);
-    const nuevo = await crearContacto({ nombre: nombre.trim(), telefono: normalizarTelefono(tel) || tel || null, clasificacion: "prospecto_futuro", estadoGestion: "nuevo", origen: "mis_contactos", ultimoContacto: null, notas: [] });
-    setAgregando(false);
-    if (nuevo) { onChange([...seleccion, nuevo.id]); setNombre(""); setTel(""); }
-  }
-
-  return (
-    <Paso titulo="Clientes que pueden cerrar contigo" ayuda={`Toca todos los que pueden hacer negocio contigo en el ${anio}. Serán tu lista prioritaria en Llamar.`}>
-      <p className="mb-3 text-sm font-bold text-ink-950">{seleccion.length} {seleccion.length === 1 ? "cliente marcado" : "clientes marcados"}</p>
-      <div className="mb-4 rounded-2xl bg-gray-50 p-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/45">Agregar uno nuevo</p>
-        <div className="grid grid-cols-[1.3fr_1fr] gap-2">
-          <input className={inputClass} placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-          <input className={inputClass} inputMode="tel" placeholder="Teléfono" value={tel} onChange={(e) => setTel(e.target.value)} />
-        </div>
-        <button onClick={agregar} disabled={nombre.trim().length < 2 || agregando} className="mt-2 min-h-[48px] w-full rounded-xl bg-ink-950 text-sm font-semibold text-white disabled:opacity-35">
-          {agregando ? "Agregando…" : "+ Agregar a mi lista"}
-        </button>
-      </div>
-      {contactos.length > 0 && (
-        <>
-          <input className={`${inputClass} mb-3`} placeholder="Buscar en mis contactos" value={q} onChange={(e) => setQ(e.target.value)} />
-          <div className="flex flex-col gap-2">
-            {filtrados.slice(0, 80).map((c) => {
-              const on = seleccion.includes(c.id);
-              return (
-                <button key={c.id} onClick={() => alternar(c.id)} className={`flex min-h-[56px] items-center gap-3 rounded-2xl border-2 px-3 text-left transition ${on ? "border-ink-950 bg-gray-50" : "border-gray-200 bg-white"}`}>
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold ${on ? "border-ink-950 bg-ink-950 text-white" : "border-black/20"}`}>{on ? "✓" : ""}</span>
-                  <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-ink-950">{c.nombre}</span>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </Paso>
-  );
-}
-
 function Resumen({ d, anio, nombre }) {
   const calc = calcularMetasPlan(d);
   return (
@@ -357,7 +310,12 @@ function Resumen({ d, anio, nombre }) {
           {calc && <p className="text-sm text-black/55">{calc.transacciones} transacciones · {calc.dia.intentos} llamadas al día · {calc.semana.citas} citas por semana</p>}
         </Tarjeta>
         <Tarjeta titulo="Valores"><p className="text-sm text-ink-950">{d.valores.join(" · ")}</p></Tarjeta>
-        <Tarjeta titulo="Clientes que pueden cerrar"><p className="text-sm text-ink-950">{d.clientesPotenciales.length} en tu lista prioritaria</p></Tarjeta>
+        <Tarjeta titulo="Seguimiento">
+          <p className="text-sm text-ink-950">Reviso mi plan cada {DIAS[d.seguimiento.dia].toLowerCase()} a las {hora12(d.seguimiento.hora)}{d.seguimiento.mensual !== "ninguna" ? ` · con mi broker: ${REVISION_MENSUAL[d.seguimiento.mensual].toLowerCase()}` : ""}</p>
+        </Tarjeta>
+        <Tarjeta titulo="Mi semana">
+          <p className="text-sm text-ink-950">{(d.agenda?.bloques || []).length} bloques · {horasPorTipo(d.agenda?.bloques).slice(0, 3).map(([t, h]) => `${h} h ${(TIPOS_BLOQUE[t] || TIPOS_BLOQUE.otro).label.toLowerCase()}`).join(" · ")}</p>
+        </Tarjeta>
       </div>
       <p className="mt-6 text-center text-sm text-black/50">Firmado por <b className="text-ink-950">{nombre}</b></p>
     </Paso>
@@ -369,6 +327,167 @@ function Tarjeta({ titulo, children }) {
     <div className="rounded-3xl border border-black/[0.06] bg-white p-4 shadow-card">
       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-black/40">{titulo}</p>
       {children}
+    </div>
+  );
+}
+
+function Opcion({ activo, onClick, children, className = "" }) {
+  return (
+    <button onClick={onClick} className={`min-h-[52px] rounded-2xl border-2 px-2 text-[15px] font-semibold transition ${activo ? "border-ink-950 bg-ink-950 text-white" : "border-gray-200 text-ink-950"} ${className}`}>
+      {children}
+    </button>
+  );
+}
+
+function Seguimiento({ valor, onChange }) {
+  const set = (c) => onChange({ ...valor, ...c });
+  return (
+    <Paso titulo="¿Cómo le daré seguimiento?" ayuda="Un plan que no se revisa se olvida. Define cuándo lo revisas y qué vas a medir.">
+      <p className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-950">Reviso mi plan cada semana el</p>
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        {[1, 2, 3, 4, 5, 6].map((dd) => <Opcion key={dd} activo={valor.dia === dd} onClick={() => set({ dia: dd })}>{DIAS[dd]}</Opcion>)}
+      </div>
+      <p className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-950">A las</p>
+      <div className="mb-6 grid grid-cols-3 gap-2">
+        {HORAS_REVISION.map((h) => <Opcion key={h} activo={valor.hora === h} onClick={() => set({ hora: h })}>{hora12(h)}</Opcion>)}
+      </div>
+      <p className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-950">Revisión mensual con mi broker</p>
+      <div className="mb-6 grid grid-cols-2 gap-2">
+        {Object.entries(REVISION_MENSUAL).map(([k, l]) => <Opcion key={k} activo={valor.mensual === k} onClick={() => set({ mensual: k })}>{l}</Opcion>)}
+      </div>
+      <p className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-950">¿Qué voy a medir?</p>
+      <div className="grid grid-cols-2 gap-2">
+        {Object.entries(INDICADORES).map(([k, l]) => (
+          <Opcion key={k} activo={valor.indicadores.includes(k)} onClick={() => set({ indicadores: valor.indicadores.includes(k) ? valor.indicadores.filter((x) => x !== k) : [...valor.indicadores, k] })}>
+            {valor.indicadores.includes(k) ? "✓ " : ""}{l}
+          </Opcion>
+        ))}
+      </div>
+    </Paso>
+  );
+}
+
+const DIAS_ATAJO = [["1,2,3,4,5", "Lunes a viernes"], ["1,2,3,4,5,6", "Lunes a sábado"]];
+
+function AgendaPlan({ d, set }) {
+  const calc = calcularMetasPlan(d);
+  const llamadasDia = calc?.dia.intentos || 5;
+  const [dias, setDias] = useState(d.agenda?.dias || [1, 2, 3, 4, 5]);
+  const [inicio, setInicio] = useState(d.agenda?.inicio || "08:00");
+  const [diaVer, setDiaVer] = useState(1);
+  const [agregando, setAgregando] = useState(false);
+  const bloques = d.agenda?.bloques || [];
+
+  function armar(nDias = dias, nInicio = inicio) {
+    const b = generarAgenda({ dias: nDias, inicio: nInicio, llamadasDia, revision: { dia: d.seguimiento.dia, hora: d.seguimiento.hora } });
+    set({ agenda: { dias: nDias, inicio: nInicio, bloques: b } });
+  }
+  useEffect(() => { if (!bloques.length) armar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const guardarBloques = (nuevos) => set({ agenda: { dias, inicio, bloques: ordenar(nuevos) } });
+  const delDia = bloquesDelDia(bloques, diaVer);
+  const horas = horasPorTipo(bloques);
+  const totalHoras = horas.reduce((s, [, h]) => s + h, 0);
+
+  return (
+    <Paso titulo="Así ordenaré mi agenda" ayuda={`Tu semana en bloques, armada con tu meta: ${llamadasDia} llamadas al día. Cada bloque es una cita contigo mismo.`}>
+      <p className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-950">Trabajo</p>
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        {DIAS_ATAJO.map(([v, l]) => {
+          const arr = v.split(",").map(Number);
+          return <Opcion key={v} activo={dias.join() === arr.join()} onClick={() => { setDias(arr); armar(arr, inicio); }}>{l}</Opcion>;
+        })}
+      </div>
+      <p className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-950">Empiezo a las</p>
+      <div className="mb-5 grid grid-cols-3 gap-2">
+        {["07:00", "08:00", "09:00"].map((h) => <Opcion key={h} activo={inicio === h} onClick={() => { setInicio(h); armar(dias, h); }}>{hora12(h)}</Opcion>)}
+      </div>
+
+      <div className="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 pb-1">
+        {ORDEN_SEMANA.map((dd) => (
+          <button key={dd} onClick={() => setDiaVer(dd)} className={`min-w-[52px] rounded-2xl px-2 py-2 text-center text-sm font-semibold ${diaVer === dd ? "bg-ink-950 text-white" : "border border-black/10 text-ink-950"}`}>
+            {DIAS_CORTO[dd]}<span className={`block text-[11px] font-normal ${diaVer === dd ? "text-white/60" : "text-black/40"}`}>{bloquesDelDia(bloques, dd).length}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {delDia.length === 0 && <p className="rounded-2xl bg-gray-50 p-4 text-center text-sm text-black/45">Día libre</p>}
+        {delDia.map((b) => {
+          const t = TIPOS_BLOQUE[b.tipo] || TIPOS_BLOQUE.otro;
+          return (
+            <div key={b.id} className="flex items-center gap-3 rounded-2xl border border-black/[0.06] bg-white p-3 shadow-sm" style={{ borderLeft: `6px solid ${t.color}` }}>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-black/45">{hora12(b.ini)} – {hora12(b.fin)}</p>
+                <p className="truncate text-[15px] font-bold text-ink-950">{tituloBloque(b)}{b.meta ? ` · ${b.meta} llamadas` : ""}</p>
+              </div>
+              <button onClick={() => guardarBloques(bloques.filter((x) => x.id !== b.id))} className="shrink-0 rounded-full border border-black/10 px-3 py-1.5 text-xs font-semibold text-black/55">Quitar</button>
+            </div>
+          );
+        })}
+      </div>
+      {agregando ? (
+        <NuevoBloque dia={diaVer} bloques={bloques} onCancelar={() => setAgregando(false)} onAgregar={(b) => { guardarBloques([...bloques, b]); setAgregando(false); }} />
+      ) : (
+        <button onClick={() => setAgregando(true)} className="mt-3 min-h-[52px] w-full rounded-2xl border-2 border-dashed border-black/15 text-sm font-semibold text-ink-950">+ Agregar bloque el {DIAS[diaVer].toLowerCase()}</button>
+      )}
+
+      <div className="mt-6 rounded-3xl bg-gray-50 p-4">
+        <p className="mb-2 text-sm font-bold text-ink-950">Tu semana: {totalHoras} horas</p>
+        {horas.map(([tipo, h]) => {
+          const t = TIPOS_BLOQUE[tipo] || TIPOS_BLOQUE.otro;
+          return (
+            <div key={tipo} className="mb-1.5">
+              <div className="flex justify-between text-xs text-black/60"><span>{t.label}</span><span>{h} h</span></div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-black/5"><div className="h-full rounded-full" style={{ width: `${(h / totalHoras) * 100}%`, background: t.color }} /></div>
+            </div>
+          );
+        })}
+        <button onClick={() => armar()} className="mt-3 text-xs font-semibold text-black/50 underline">Volver a la agenda sugerida</button>
+      </div>
+    </Paso>
+  );
+}
+
+function NuevoBloque({ dia, bloques, onAgregar, onCancelar }) {
+  const [tipo, setTipo] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [ini, setIni] = useState("");
+  const [dur, setDur] = useState(60);
+  const horas = [];
+  for (let m = 7 * 60; m <= 19 * 60; m += 30) horas.push(deMin(m));
+  const candidato = ini ? { id: "nuevo", dia, ini, fin: deMin(aMin(ini) + dur), tipo, nombre } : null;
+  const cruces = candidato ? choques(bloques, candidato) : [];
+  const valido = tipo && ini && (tipo !== "otro" || nombre.trim().length >= 2);
+
+  return (
+    <div className="mt-3 rounded-3xl border-2 border-ink-950 bg-white p-4">
+      <p className="mb-2 text-sm font-bold text-ink-950">Nuevo bloque · {DIAS[dia]}</p>
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        {Object.entries(TIPOS_BLOQUE).filter(([k]) => k !== "revision").map(([k, t]) => (
+          <button key={k} onClick={() => setTipo(k)} className={`min-h-[48px] rounded-xl border-2 px-2 text-left text-sm font-semibold ${tipo === k ? "border-ink-950 bg-gray-50" : "border-gray-200"}`} style={{ borderLeftWidth: 8, borderLeftColor: t.color }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tipo === "otro" && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {OTRAS_SUGERIDAS.map((o) => <button key={o} onClick={() => setNombre(o)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${nombre === o ? "bg-ink-950 text-white" : "border border-black/10"}`}>{o}</button>)}
+        </div>
+      )}
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-black/45">Empieza</p>
+      <div className="mb-3 grid grid-cols-4 gap-1.5">
+        {horas.map((h) => <button key={h} onClick={() => setIni(h)} className={`min-h-[40px] rounded-xl text-xs font-semibold ${ini === h ? "bg-ink-950 text-white" : "border border-black/10"}`}>{hora12(h)}</button>)}
+      </div>
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-black/45">Dura</p>
+      <div className="mb-3 grid grid-cols-4 gap-1.5">
+        {[[30, "30 min"], [60, "1 h"], [90, "1½ h"], [120, "2 h"], [180, "3 h"]].map(([m, l]) => <button key={m} onClick={() => setDur(m)} className={`min-h-[40px] rounded-xl text-xs font-semibold ${dur === m ? "bg-ink-950 text-white" : "border border-black/10"}`}>{l}</button>)}
+      </div>
+      {cruces.length > 0 && <p className="mb-3 rounded-xl bg-gold-50 p-2.5 text-xs text-gold-700">Se cruza con: {cruces.map((c) => `${tituloBloque(c)} (${hora12(c.ini)})`).join(", ")}</p>}
+      <div className="grid grid-cols-[1fr_2fr] gap-2">
+        <button onClick={onCancelar} className="min-h-[48px] rounded-full border-2 border-gray-200 text-sm font-semibold">Cancelar</button>
+        <button disabled={!valido} onClick={() => onAgregar({ ...candidato, id: crypto.randomUUID ? crypto.randomUUID() : String(Math.random()), nombre: tipo === "otro" ? nombre.trim() : undefined })} className="min-h-[48px] rounded-full bg-ink-950 text-sm font-semibold text-white disabled:opacity-35">Agregar</button>
+      </div>
     </div>
   );
 }

@@ -7,9 +7,10 @@ import { mismoDia, formatDia, sumarDias, sumarMeses, obtenerDiasCalendario } fro
 import { ActividadCard } from "../../components/shared/ActividadCard.jsx";
 import { AccionModal } from "../../components/shared/AccionModal.jsx";
 import { CrearActividadModal } from "./CrearActividadModal.jsx";
+import { TIPOS_BLOQUE, DIAS, ORDEN_SEMANA, bloquesDelDia, tituloBloque, hora12 } from "../plan/agenda.js";
 
 export function Agenda() {
-  const { contactos, actividades, contactoNombre, crearActividad, completarActividad, reprogramarActividad, cancelarActividad, registrarContacto, abrirExpediente } = useAppData();
+  const { plan, setVista: irA, contactos, actividades, contactoNombre, crearActividad, completarActividad, reprogramarActividad, cancelarActividad, registrarContacto, abrirExpediente } = useAppData();
   const [vista, setVista] = useState("lista"); // 'lista' | 'calendario'
   const [modoCal, setModoCal] = useState("mes"); // 'dia' | 'mes'
   const [fechaSel, setFechaSel] = useState(new Date());
@@ -48,7 +49,30 @@ export function Agenda() {
       <div className="mb-5 flex gap-1.5">
         <Chip activo={vista === "lista"} onClick={() => setVista("lista")}>Lista</Chip>
         <Chip activo={vista === "calendario"} onClick={() => setVista("calendario")}>📅 Calendario</Chip>
+        <Chip activo={vista === "semana"} onClick={() => setVista("semana")}>🗓 Mi semana</Chip>
       </div>
+
+      {vista === "semana" && (
+        <div>
+          {(plan?.agenda?.bloques || []).length === 0 ? (
+            <EmptyState title="Aún no ordenas tu semana" hint="Se arma en tu plan de negocio, en el paso «Así ordenaré mi agenda»." />
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {ORDEN_SEMANA.map((d) => {
+                const bs = bloquesDelDia(plan.agenda.bloques, d);
+                const hoy = d === new Date().getDay();
+                return (
+                  <section key={d} className={`rounded-3xl border bg-white p-4 shadow-card ${hoy ? "border-ink-950" : "border-black/[0.06]"}`}>
+                    <h2 className="mb-2 text-sm font-bold text-ink-950">{DIAS[d]}{hoy ? " · hoy" : ""}</h2>
+                    {bs.length === 0 ? <p className="text-sm text-black/40">Día libre</p> : bs.map((b) => <BloqueFila key={b.id} b={b} />)}
+                  </section>
+                );
+              })}
+            </div>
+          )}
+          <button onClick={() => irA("plan")} className="mt-4 w-full rounded-full border border-black/10 py-3 text-sm font-semibold text-ink-950">Cambiar mi semana desde Mi plan</button>
+        </div>
+      )}
 
       {vista === "lista" && (
         <>
@@ -105,6 +129,12 @@ export function Agenda() {
                 <button onClick={() => setFechaSel((f) => sumarDias(f, 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white text-lg font-bold text-gray-600">›</button>
               </div>
 
+              {bloquesDelDia(plan?.agenda?.bloques, fechaSel.getDay()).length > 0 && (
+                <div className="mb-4 rounded-3xl bg-gray-50 p-3">
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-black/45">Mis bloques de este día</p>
+                  {bloquesDelDia(plan.agenda.bloques, fechaSel.getDay()).map((b) => <BloqueFila key={b.id} b={b} />)}
+                </div>
+              )}
               {actividadesDelDia.length === 0 ? (
                 <EmptyState title="Sin actividades programadas" hint="No tienes visitas, llamadas ni tareas para este día." />
               ) : (
@@ -167,6 +197,16 @@ export function Agenda() {
         onReprogramar={(f) => { reprogramarActividad(enFoco.id, f); setEnFoco(null); setAccion(null); }}
         onCancelar={() => { cancelarActividad(enFoco.id); setEnFoco(null); setAccion(null); }}
       />
+    </div>
+  );
+}
+
+function BloqueFila({ b }) {
+  const t = TIPOS_BLOQUE[b.tipo] || TIPOS_BLOQUE.otro;
+  return (
+    <div className="mb-1.5 flex items-center gap-2.5 rounded-xl bg-white px-3 py-2" style={{ borderLeft: `5px solid ${t.color}` }}>
+      <span className="w-[96px] shrink-0 text-xs font-semibold text-black/45">{hora12(b.ini)} – {hora12(b.fin)}</span>
+      <span className="truncate text-sm font-semibold text-ink-950">{tituloBloque(b)}{b.meta ? ` · ${b.meta} llamadas` : ""}</span>
     </div>
   );
 }

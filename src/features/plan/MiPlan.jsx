@@ -4,17 +4,33 @@ import { AREAS_VIDA } from "../../constants/plan.js";
 import { calcularMetasPlan } from "./calculos.js";
 import { formatMoney } from "../../lib/format.js";
 import { PlanWizard } from "./PlanWizard.jsx";
+import { inicioDeSemana } from "../llamar/gestion.js";
+import { TIPOS_BLOQUE, DIAS, ORDEN_SEMANA, INDICADORES, REVISION_MENSUAL, bloquesDelDia, horasPorTipo, tituloBloque, hora12 } from "./agenda.js";
 
 // "Mi plan": el plan de negocio firmado, para verlo todos los días como pide el cuaderno.
 // Cada sección se edita con un toque (abre el asistente en esa página) y se puede imprimir.
 export function MiPlan() {
-  const { plan, oportunidades, contactos, agency } = useAppData();
+  const { plan, oportunidades, interacciones, captaciones, agency } = useAppData();
   const [editarEn, setEditarEn] = useState(null);
   if (!plan) return null;
   const calc = calcularMetasPlan(plan);
   const cierresDelAnio = oportunidades.filter((o) => o.estado === "ganada" && o.cerradaEn && new Date(o.cerradaEn).getFullYear() === plan.anio).length;
   const avance = calc ? Math.min(100, Math.round((cierresDelAnio / calc.transacciones) * 100)) : 0;
-  const clientes = contactos.filter((c) => plan.clientesPotenciales.includes(c.id));
+  const seg = plan.seguimiento || {};
+  const bloques = plan.agenda?.bloques || [];
+  // Seguimiento: lo real de esta semana y este mes contra lo que pide el plan.
+  const semana = inicioDeSemana();
+  const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const deSemana = interacciones.filter((i) => new Date(i.creadoEn) >= semana);
+  const ganadasMes = oportunidades.filter((o) => o.estado === "ganada" && o.cerradaEn && new Date(o.cerradaEn) >= inicioMes);
+  const reales = {
+    llamadas: { real: deSemana.length, meta: calc?.semana.intentos, periodo: "esta semana" },
+    efectivos: { real: deSemana.filter((i) => i.efectivo).length, meta: calc?.semana.efectivos, periodo: "esta semana" },
+    citas: { real: deSemana.filter((i) => i.cita).length, meta: calc?.semana.citas, periodo: "esta semana" },
+    captaciones: { real: captaciones.filter((c) => c.creadoEn && new Date(c.creadoEn) >= inicioMes).length, meta: calc ? Math.max(1, Math.ceil(calc.mes.cierres * 1.5)) : null, periodo: "este mes" },
+    cierres: { real: ganadasMes.length, meta: calc?.mes.cierres, periodo: "este mes" },
+    comision: { real: cierresDelAnio * (plan.comisionPromedio || 0), meta: plan.metaMonetaria, periodo: `en ${plan.anio}`, dinero: true },
+  };
 
   return (
     <div className="mx-auto max-w-3xl print:max-w-none">
@@ -41,11 +57,11 @@ export function MiPlan() {
             <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gold-500" style={{ width: `${avance}%` }} /></div>
           </>
         )}
-        <Editar onClick={() => setEditarEn(8)} oscuro />
+        <Editar onClick={() => setEditarEn("negocio")} oscuro />
       </div>
 
       {calc && (
-        <Seccion titulo="Mi ritmo para lograrlo" onEditar={() => setEditarEn(8)}>
+        <Seccion titulo="Mi ritmo para lograrlo" onEditar={() => setEditarEn("negocio")}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Dato l="Llamadas al día" v={calc.dia.intentos} />
             <Dato l="Efectivos al día" v={calc.dia.efectivos} />
@@ -55,18 +71,58 @@ export function MiPlan() {
         </Seccion>
       )}
 
-      <Seccion titulo="Visión" onEditar={() => setEditarEn(2)}><p className="text-[15px] text-ink-950">{plan.vision}</p></Seccion>
-      <Seccion titulo="Misión" onEditar={() => setEditarEn(3)}><p className="text-[15px] text-ink-950">{plan.mision}</p></Seccion>
-      <Seccion titulo="Valores" onEditar={() => setEditarEn(4)}>
+      <Seccion titulo="Mi seguimiento" onEditar={() => setEditarEn("seguimiento")}>
+        <p className="mb-3 text-sm text-black/55">
+          Reviso mi plan cada <b className="text-ink-950">{DIAS[seg.dia ?? 1]?.toLowerCase()} a las {hora12(seg.hora || "08:00")}</b>
+          {seg.mensual && seg.mensual !== "ninguna" ? <> · con mi broker: <b className="text-ink-950">{REVISION_MENSUAL[seg.mensual]?.toLowerCase()}</b></> : null}
+        </p>
+        <div className="flex flex-col gap-3">
+          {(seg.indicadores || Object.keys(INDICADORES)).filter((k) => reales[k]).map((k) => {
+            const r = reales[k];
+            const pct = r.meta ? Math.min(100, Math.round((r.real / r.meta) * 100)) : 0;
+            return (
+              <div key={k}>
+                <div className="flex justify-between text-sm"><span className="font-semibold text-ink-950">{INDICADORES[k]} <span className="font-normal text-black/40">{r.periodo}</span></span>
+                  <span className="text-black/60">{r.dinero ? formatMoney(r.real) : r.real} de {r.dinero ? formatMoney(r.meta) : r.meta ?? "—"}</span></div>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full ${pct >= 100 ? "bg-brand-600" : pct >= 60 ? "bg-gold-500" : "bg-rose-400"}`} style={{ width: `${pct}%` }} /></div>
+              </div>
+            );
+          })}
+        </div>
+      </Seccion>
+
+      <Seccion titulo="Mi semana" onEditar={() => setEditarEn("agenda")}>
+        {bloques.length === 0 ? <p className="text-sm text-black/45">Aún no ordenas tu agenda.</p> : (
+          <>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {horasPorTipo(bloques).map(([t, h]) => (
+                <span key={t} className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-white" style={{ background: (TIPOS_BLOQUE[t] || TIPOS_BLOQUE.otro).color }}>{(TIPOS_BLOQUE[t] || TIPOS_BLOQUE.otro).label} · {h} h</span>
+              ))}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {ORDEN_SEMANA.filter((d) => bloquesDelDia(bloques, d).length).map((d) => (
+                <div key={d}>
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wide text-black/45">{DIAS[d]}</p>
+                  {bloquesDelDia(bloques, d).map((b) => (
+                    <p key={b.id} className="flex gap-2 text-sm text-ink-950">
+                      <span className="w-[118px] shrink-0 whitespace-nowrap text-black/45">{hora12(b.ini)}–{hora12(b.fin)}</span>
+                      <span className="truncate font-semibold" style={{ color: (TIPOS_BLOQUE[b.tipo] || TIPOS_BLOQUE.otro).color }}>{tituloBloque(b)}</span>
+                    </p>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </Seccion>
+
+      <Seccion titulo="Visión" onEditar={() => setEditarEn("vision")}><p className="text-[15px] text-ink-950">{plan.vision}</p></Seccion>
+      <Seccion titulo="Misión" onEditar={() => setEditarEn("mision")}><p className="text-[15px] text-ink-950">{plan.mision}</p></Seccion>
+      <Seccion titulo="Valores" onEditar={() => setEditarEn("valores")}>
         <div className="flex flex-wrap gap-1.5">{plan.valores.map((v) => <span key={v} className="rounded-full bg-gray-100 px-3 py-1.5 text-sm font-semibold text-ink-950">{v}</span>)}</div>
       </Seccion>
-      <Seccion titulo={`Metas ${plan.anio}`} onEditar={() => setEditarEn(7)}><ListaAreas valores={plan.metas} /></Seccion>
-      <Seccion titulo={`Logros del ${plan.anio - 1}`} onEditar={() => setEditarEn(6)}><ListaAreas valores={plan.logros} /></Seccion>
-      <Seccion titulo={`Clientes que pueden cerrar en ${plan.anio} · ${clientes.length}`} onEditar={() => setEditarEn(9)}>
-        {clientes.length ? (
-          <div className="grid gap-1 sm:grid-cols-2">{clientes.map((c) => <p key={c.id} className="truncate text-sm text-ink-950">• {c.nombre}</p>)}</div>
-        ) : <p className="text-sm text-black/45">Aún no marcas clientes.</p>}
-      </Seccion>
+      <Seccion titulo={`Metas ${plan.anio}`} onEditar={() => setEditarEn("metas")}><ListaAreas valores={plan.metas} /></Seccion>
+      <Seccion titulo={`Logros del ${plan.anio - 1}`} onEditar={() => setEditarEn("logros")}><ListaAreas valores={plan.logros} /></Seccion>
 
       <p className="mb-8 mt-6 text-center text-sm text-black/45">
         Yo, <b className="text-ink-950">{agency.nombreAgente}</b>, escribí este plan el {plan.compromisoEn ? new Date(plan.compromisoEn).toLocaleDateString("es-SV", { day: "numeric", month: "long", year: "numeric" }) : "—"} y me comprometo a verlo todos los días.

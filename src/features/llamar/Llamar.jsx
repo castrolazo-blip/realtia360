@@ -38,7 +38,7 @@ export function Llamar() {
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState("");
 
-  const cola = useMemo(() => armarCola(contactos, actividades, saltados, plan?.clientesPotenciales), [contactos, actividades, saltados, plan]);
+  const cola = useMemo(() => armarCola(contactos, actividades, saltados), [contactos, actividades, saltados]);
   const METAS_DIA = metasDelDia(plan);
   const hoy = useMemo(() => indicadoresGestion(interacciones), [interacciones]);
 
