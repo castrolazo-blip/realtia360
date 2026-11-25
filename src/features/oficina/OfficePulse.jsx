@@ -12,7 +12,7 @@ import { anioDelPlan } from "../../constants/plan.js";
 // que identifique a los clientes de cada asesor. El detalle por asesor vive en
 // Agentes — acá solo el resumen ejecutivo.
 export function OfficePulse() {
-  const { agency, equipo, oficinaCartera, setVista } = useAppData();
+  const { agency, equipo, oficinaCartera, setVista, plan } = useAppData();
 
   const porAgente = useMemo(() => calcularResumenPorAgente(equipo, oficinaCartera), [equipo, oficinaCartera]);
   const totales = useMemo(() => calcularTotalesOficina(porAgente), [porAgente]);
@@ -28,6 +28,14 @@ export function OfficePulse() {
         <StatTile label="Captaciones publicadas" valor={`${totales.captacionesPublicadas}/${totales.captaciones}`} icono={Icon.Clipboard} />
         <StatTile label="Cierres" valor={totales.cierres} icono={Icon.Crown} destacado={totales.cierres > 0} />
       </div>
+
+      <button onClick={() => setVista("plan")} className="mb-4 flex w-full items-center justify-between gap-3 rounded-3xl bg-ink-950 p-5 text-left text-white shadow-premium">
+        <span>
+          <span className="block text-xs font-semibold uppercase tracking-wide text-white/50">Mi plan de negocio {anioDelPlan()}</span>
+          <span className="block text-lg font-bold">{plan?.completadoEn ? "Ver mi plan" : plan?.paso ? "Continuar mi plan" : "Crear mi plan"}</span>
+        </span>
+        <span className="text-2xl text-gold-400">→</span>
+      </button>
 
       <div className="mb-6 rounded-3xl border border-black/[0.06] bg-white p-5 shadow-card">
         <div className="flex items-end justify-between gap-3">

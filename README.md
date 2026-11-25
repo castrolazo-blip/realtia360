@@ -319,6 +319,11 @@ Después: **Mi plan** (`MiPlan.jsx`, en el menú y en la tarjeta superior de Ini
 planes **solo en números** (si está firmado, meta y comisión promedio). Office Pulse muestra
 cuántos asesores firmaron su plan, la suma de metas y una columna "Plan" por asesor.
 
+**Crear o rehacer el plan:** "Mi plan" ofrece **Crear mi plan** / **Continuar mi plan** cuando
+aún no está firmado y **Empezar mi plan desde cero** (con confirmación) para dejarlo en
+blanco y llenarlo de nuevo. El broker también tiene "Mi plan" (menú de escritorio y tarjeta
+en Office Pulse); para él es opcional y su plan personal no cambia la meta de la oficina.
+
 **Pendiente:** "Plan de trabajo" y "Plan de marketing" del cuaderno (faltan esas páginas) y
 que el broker pueda ajustar las tasas de conversión de su oficina.
 

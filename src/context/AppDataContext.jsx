@@ -461,11 +461,21 @@ export function AppDataProvider({ children }) {
     if (error) { console.error("guardarPlan", error); return { ok: false, error: error.message }; }
     const guardado = planFromRow(row);
     setPlan(guardado);
-    if (guardado.completadoEn && guardado.metaMonetaria && guardado.comisionPromedio) {
+    // Para el broker no: su meta de perfil es la meta de la OFICINA (Proyecciones), no la
+    // de su plan personal.
+    if (perfil?.rol !== "broker" && guardado.completadoEn && guardado.metaMonetaria && guardado.comisionPromedio) {
       const pct = perfil?.comisionPromedioPct || 5;
       await actualizarMeta({ metaAnual: guardado.metaMonetaria, comisionPromedioPct: pct, precioPromedioVenta: Math.round(guardado.comisionPromedio / (pct / 100)) });
     }
     return { ok: true, plan: guardado };
+  }
+
+  // "Empezar desde cero": deja el plan del año en blanco (sin firmar) para llenarlo de nuevo.
+  function reiniciarPlan() {
+    return guardarPlan({
+      compromisoEn: null, vision: "", mision: "", valores: [], porQue: "", logros: {}, metas: {},
+      metaMonetaria: null, comisionPromedio: null, seguimiento: {}, agenda: {}, paso: 0, completadoEn: null,
+    });
   }
 
   // Guarda el resultado de una llamada (o WhatsApp) en un solo paso, como "Guardar y
@@ -644,7 +654,7 @@ export function AppDataProvider({ children }) {
     vista, setVista,
     cargando, errorCarga, recargarTodo, agency, signOut, actualizarPerfil, actualizarMeta,
     contactos, oportunidades, actividades, captaciones, requerimientos, kyc, interacciones,
-    plan, guardarPlan,
+    plan, guardarPlan, reiniciarPlan,
     registrarLlamada, importarContactos, abrirLlamar, llamarA, setLlamarA, filtroContactos, setFiltroContactos,
     importarAbierto, setImportarAbierto,
     equipo, oficinaCartera, directorioOficina, propiedadesOficina,

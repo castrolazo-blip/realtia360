@@ -21,6 +21,7 @@ export const NAV = NAV_ASESOR;
 // de Contactos/Oportunidades/Captación/Agenda personales.
 export const NAV_BROKER = [
   { key: "inicio", label: "Inicio", icon: Icon.Home },
+  { key: "plan", label: "Mi plan", icon: Icon.Target },
   { key: "agentes", label: "Agentes", icon: Icon.Users },
   { key: "produccion", label: "Producción", icon: Icon.Crown },
   { key: "proyecciones", label: "Proyecciones", icon: Icon.TrendUp },
@@ -53,4 +54,5 @@ export const ACCIONES_RAPIDAS = [
 const MOVIL_ASESOR = ["inicio", "llamar", "contactos", "oportunidades", "agenda"];
 export const NAV_MOVIL_ASESOR = NAV_ASESOR.filter((item) => MOVIL_ASESOR.includes(item.key));
 export const NAV_MOVIL = NAV_MOVIL_ASESOR;
-export const NAV_MOVIL_BROKER = NAV_BROKER;
+// En móvil el broker llega a "Mi plan" desde la tarjeta de Office Pulse (6 botones caben).
+export const NAV_MOVIL_BROKER = NAV_BROKER.filter((item) => item.key !== "plan");

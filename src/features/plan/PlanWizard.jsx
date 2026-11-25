@@ -14,7 +14,7 @@ export const PASOS = ["portada", "compromiso", "vision", "mision", "valores", "p
 // Asistente del Plan de Negocio anual: la puerta de entrada de Realtia. Sigue el cuaderno
 // de la oficina página por página. Guarda en cada paso, así se puede retomar donde quedó.
 // Donde hay que escribir, ofrece frases para tocar y luego ajustar (o dictar por voz).
-export function PlanWizard({ alTerminar, inicial }) {
+export function PlanWizard({ alTerminar, inicial, cerrable }) {
   const { plan, guardarPlan, agency, signOut } = useAppData();
   const anio = plan?.anio || anioDelPlan();
   const [paso, setPaso] = useState(() => (inicial != null ? Math.max(0, PASOS.indexOf(inicial)) : Math.min(plan?.paso || 0, PASOS.length - 1)));
@@ -69,7 +69,7 @@ export function PlanWizard({ alTerminar, inicial }) {
       <div className="border-b border-black/5 px-5 pb-3 pt-[max(0.9rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex max-w-xl items-center justify-between">
           <p className="text-sm font-bold text-ink-950">Plan de negocio {anio}</p>
-          {plan?.completadoEn ? (
+          {plan?.completadoEn || cerrable ? (
             <button onClick={alTerminar} className="text-sm font-semibold text-black/50">Cerrar</button>
           ) : (
             <button onClick={signOut} className="text-xs font-semibold text-black/40">Salir</button>

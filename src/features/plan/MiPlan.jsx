@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAppData } from "../../context/AppDataContext.jsx";
-import { AREAS_VIDA } from "../../constants/plan.js";
+import { AREAS_VIDA, anioDelPlan } from "../../constants/plan.js";
 import { calcularMetasPlan } from "./calculos.js";
 import { formatMoney } from "../../lib/format.js";
 import { PlanWizard } from "./PlanWizard.jsx";
@@ -10,9 +10,55 @@ import { TIPOS_BLOQUE, DIAS, ORDEN_SEMANA, INDICADORES, REVISION_MENSUAL, bloque
 // "Mi plan": el plan de negocio firmado, para verlo todos los días como pide el cuaderno.
 // Cada sección se edita con un toque (abre el asistente en esa página) y se puede imprimir.
 export function MiPlan() {
-  const { plan, oportunidades, interacciones, captaciones, agency } = useAppData();
+  const { plan, oportunidades, interacciones, captaciones, agency, reiniciarPlan } = useAppData();
   const [editarEn, setEditarEn] = useState(null);
-  if (!plan) return null;
+  const [asistente, setAsistente] = useState(false);
+  const [confirmarReinicio, setConfirmarReinicio] = useState(false);
+  const [reiniciando, setReiniciando] = useState(false);
+
+  async function empezarDeCero() {
+    setReiniciando(true);
+    const res = await reiniciarPlan();
+    setReiniciando(false);
+    setConfirmarReinicio(false);
+    // El asesor vuelve solo al asistente (la puerta de entrada); el broker lo abre aquí.
+    if (res.ok) setAsistente(true);
+  }
+
+  const asistenteAbierto = asistente && <PlanWizard cerrable alTerminar={() => setAsistente(false)} />;
+  const botonReinicio = (
+    <div className="mb-8 mt-4 text-center print:hidden">
+      {confirmarReinicio ? (
+        <div className="mx-auto max-w-sm rounded-3xl border-2 border-rose-200 bg-rose-50 p-4">
+          <p className="text-sm font-semibold text-rose-800">Se borra todo lo que escribiste en tu plan y empiezas en blanco. ¿Seguro?</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button onClick={() => setConfirmarReinicio(false)} className="min-h-[48px] rounded-full border-2 border-gray-200 bg-white text-sm font-semibold">Cancelar</button>
+            <button onClick={empezarDeCero} disabled={reiniciando} className="min-h-[48px] rounded-full bg-rose-600 text-sm font-semibold text-white">{reiniciando ? "Borrando…" : "Sí, empezar de cero"}</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setConfirmarReinicio(true)} className="rounded-full border border-black/10 px-5 py-3 text-sm font-semibold text-black/60">↺ Empezar mi plan desde cero</button>
+      )}
+    </div>
+  );
+
+  if (!plan?.completadoEn) {
+    const enProgreso = plan && (plan.paso > 0 || plan.vision);
+    return (
+      <div className="mx-auto max-w-xl">
+        <div className="rounded-3xl bg-ink-950 p-7 text-center text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">Plan de negocio</p>
+          <p className="mt-1 text-5xl font-extrabold">{plan?.anio || anioDelPlan()}</p>
+          <p className="mx-auto mt-3 max-w-sm text-sm text-white/65">Tu objetivo del año, cómo le darás seguimiento y cómo ordenarás tu agenda. Te toma unos 10 minutos.</p>
+          <button onClick={() => setAsistente(true)} className="mt-6 min-h-[56px] w-full rounded-full bg-gold-500 text-base font-bold text-ink-950">
+            {enProgreso ? "Continuar mi plan" : "Crear mi plan"}
+          </button>
+        </div>
+        {enProgreso && botonReinicio}
+        {asistenteAbierto}
+      </div>
+    );
+  }
   const calc = calcularMetasPlan(plan);
   const cierresDelAnio = oportunidades.filter((o) => o.estado === "ganada" && o.cerradaEn && new Date(o.cerradaEn).getFullYear() === plan.anio).length;
   const avance = calc ? Math.min(100, Math.round((cierresDelAnio / calc.transacciones) * 100)) : 0;
@@ -128,7 +174,9 @@ export function MiPlan() {
         Yo, <b className="text-ink-950">{agency.nombreAgente}</b>, escribí este plan el {plan.compromisoEn ? new Date(plan.compromisoEn).toLocaleDateString("es-SV", { day: "numeric", month: "long", year: "numeric" }) : "—"} y me comprometo a verlo todos los días.
       </p>
 
+      {botonReinicio}
       {editarEn != null && <PlanWizard inicial={editarEn} alTerminar={() => setEditarEn(null)} />}
+      {asistenteAbierto}
     </div>
   );
 }
